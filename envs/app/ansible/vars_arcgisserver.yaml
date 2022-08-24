@@ -1,0 +1,37 @@
+---
+# trailing / or \ is not used basically
+arcgisports:
+  - 6080
+  - 6443
+healthcheck_endpoint: "https://{{ server_internal_fqdn }}:6443/arcgis/rest/info/healthCheck"
+generatetoken_endpoint: "https://{{ server_internal_fqdn }}:6443/arcgis/admin/generateToken"
+certificate_endpoint: "https://{{ server_internal_fqdn }}:6443/arcgis/admin/machines/{{ server_internal_fqdn }}/sslcertificates"
+renamemachine_endpoint: "https://{{ server_internal_fqdn }}:6443/arcgis/admin/machines/rename"
+importcacertificate_endpoint: "https://{{ server_internal_fqdn }}:6443/arcgis/admin/machines/{{ server_internal_fqdn }}/sslcertificates/importRootOrIntermediate"
+importwebcertificate_endpoint: "https://{{ server_internal_fqdn }}:6443/arcgis/admin/machines/{{ server_internal_fqdn }}/sslcertificates/importExistingServerCertificate"
+editserversetting_endpoint: "https://{{ server_internal_fqdn }}:6443/arcgis/admin/machines/{{ server_internal_fqdn }}/edit"
+system_properties_update_endpoint: "https://{{ server_internal_fqdn }}:6443/arcgis/admin/system/properties/update"
+
+# for Windows
+win_service_name: "ArcGIS Server"
+win_server_dir: C:\egihs\arcgisserver
+win_config_store_dir: C:\egihs\arcgisserver
+# the following variable is set with system information.
+win_install_dir: C:\ArcGIS # the default value. The ansible task can get the value from registery and overwrite this varibable.
+win_softwareauthorization_exe: C:\PROGRA~1\COMMON~1\ArcGIS\bin\SoftwareAuthorization.exe
+win_authorize_software_shell: "{{ win_softwareauthorization_exe }} -s Server -v 10.9 -lif {{ win_remote_temp_dest_dir }}\\{{ server_authorizationfile }}"
+# {{ C:\Program Files\Common Files\ArcGIS\bin\SoftwareAuthorization.exe }}\"\" /S Server /V 10.9 /LIF "{{ win_remote_temp_dest_dir }}\{{ server_authorizationfile }}
+win_createsite_shell: "createsite.bat -u {{ server_admin_user }} -p {{ server_admin_user_password }} -d {{ win_server_dir }} -c {{ win_config_store_dir }}"
+win_createsite_shell_location: "{{ win_install_dir }}\\tools\\createsite"
+
+# for Linux in the future
+# arcgis parameters
+install_dir: /opt # from goldenimage
+server_dir: "{{ install_dir }}/arcgis/server/usr"
+# default is install_dir /arcgis/server/ server_dir
+config_store_dir: "{{ install_dir }}/arcgis/server/usr"
+# default is install_dir /arcgis/server/ config_store_dir
+createsite_shell: "./createsite.sh -u {{ server_admin_user }} -p {{ server_admin_user_password }} -d {{ server_dir }} -c {{ config_store_dir }}"
+createsite_shell_location: "{{ install_dir }}/arcgis/server/tools/createsite"
+# service name parameter
+service_name: arcgisserver

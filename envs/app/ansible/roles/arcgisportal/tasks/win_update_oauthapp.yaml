@@ -1,0 +1,119 @@
+---
+- name: health check arcgis portal
+  ansible.windows.win_uri:
+    url: "{{ healthcheck_endpoint }}"
+    method: GET
+    validate_certs: no
+    status_code: 200
+  register: portal_healthstatus_result
+  until: portal_healthstatus_result.status_code == 200
+  retries: 180 # 180 = 30 min
+  delay: 10 # Every 10 seconds
+
+- debug:
+    var: portal_healthstatus_result
+
+- name: get oauth app arcgisonline
+  ansible.windows.win_uri:
+    url: "{{ admin_endpoint }}/security/oauth/getAppInfo?appID=arcgisonline&token={{ tokenresult.json.token }}&f=json"
+    method: GET
+    validate_certs: no
+    content_type: application/json
+    return_content: yes
+    headers:
+      Referer: "{{ portal_admin_root_endpoint }}"
+      # Referer: "https://{{ ansible_facts['nodename'] }}:7443"
+  register: arcgisonline_app_info
+
+- name: debug stdout
+  set_fact: 
+    iteminfo: "{{ arcgisonline_app_info.json }}"
+
+- debug:
+    var: iteminfo
+
+- debug:
+    var: iteminfo['redirectURIs']
+
+- name: debug list
+  set_fact: 
+    redirecturislist: "{{ iteminfo['redirectURIs'] }}"
+
+- debug:
+    var: redirecturislist
+
+# 1st challenge
+
+# - name: set machine name val
+#   set_fact:
+#     this_nodename: "{{ ansible_facts['nodename'] | lower }}"
+
+# - name: replace machine name
+#   set_fact:
+#     alterredirecturislist: "{{ redirecturislist | map('regex_replace', '^https://' + this_nodename, 'https://' + portal_internal_fqdn) | list }}"
+
+# - debug:
+#     var: alterredirecturislist
+  
+# - name: set value
+#   set_fact:
+#     additem: "{{ 'https://' + this_nodename }}"
+
+# - name: add list
+#   set_fact: 
+#     redirecturislist: "{{ alterredirecturislist + [ additem ] }}"
+
+# - debug:
+#     var: redirecturislist
+
+# - name: Change value.
+#   set_fact:
+#     iteminfo: "{{ iteminfo|combine ({ 'redirectURIs' : redirecturislist }) }}"
+
+# 1st challenge end
+
+# 2nd challenge
+- name: to list
+  set_fact: 
+    alterredirecturislist: "{{ redirecturislist | list }}"
+
+- name: set value
+  set_fact:
+    additem: "{{ 'https://' + portal_internal_fqdn }}"
+
+- name: add list
+  set_fact: 
+    redirecturislist: "{{ alterredirecturislist + [ additem ] }}"
+
+- debug:
+    var: redirecturislist
+
+- name: Change value.
+  set_fact:
+    iteminfo: "{{ iteminfo|combine ({ 'redirectURIs' : redirecturislist }) }}"
+
+# 2nd challenge end
+
+- debug:
+    var: iteminfo
+
+- name: update oauth app arcgisonline
+  ansible.windows.win_uri:
+    url: "{{ admin_endpoint }}/security/oauth/updateAppInfo"
+    method: POST
+    body: "appInfo={{ iteminfo }}&token={{ tokenresult.json.token }}&f=json"
+    validate_certs: no
+    content_type: application/x-www-form-urlencoded
+    return_content: yes
+    headers:
+      Referer: "{{ portal_admin_root_endpoint }}"
+      # Referer: "https://{{ ansible_facts['nodename'] }}:7443"
+  register: update_arcgisonline_app_info
+  
+- debug:
+    var: update_arcgisonline_app_info
+
+- name: pause time
+  pause:
+    seconds: 60
+

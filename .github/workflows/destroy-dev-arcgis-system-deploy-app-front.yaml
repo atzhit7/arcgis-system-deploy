@@ -1,0 +1,78 @@
+name: DESTORY front deployment
+# on:
+#   push:
+#     paths:
+#       - 'envs/dev/infra/*.tf'
+#       - 'envs/dev/infra/*.tfvars'
+##########################
+### Run Manually       ###
+##########################
+on:
+  workflow_dispatch:
+    inputs:
+      subdomain:
+        required: true
+        default: "seed1"
+      deploypurpose:
+        required: false
+        default: "dev"
+
+env:
+  # set with your preferred AWS region, e.g. us-west-1
+  AWS_REGION: ap-southeast-2
+  # set with GitHub Actions role name
+  AWS_ROLE_ARN: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-action-to-ec2
+  ROLLE_SESSION_NAME: GithubAction-Destroy-Front
+  CODEBUILD_PROJECT_NAME: ${{ secrets.AWS_CODEBUILD_PROJECT }}
+  DEPLOY_SUBDOMAIN: ${{ github.event.inputs.subdomain }}
+  DEPLOY_PURPOSE: ${{ github.event.inputs.deploypurpose }}
+
+defaults:
+  run:
+    working-directory: ./envs/dev/app/ansible/
+
+jobs:
+  destroy:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-20.04
+    # These permissions are needed to interact with GitHub's OIDC Token endpoint.
+    permissions:
+      id-token: write
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+    steps:
+      - uses: actions/checkout@v2
+        id: checkout
+        # if manual-run, please comment out the following
+        # if: contains(toJSON(github.event.commits.*.message), '@destroy-aws')
+        with:
+          submodules: true  # Fetch submodules
+          fetch-depth: 0    # Fetch all history for .GitInfo and .Lastmod
+      
+      - name: Configure AWS credentials from IAM Role for Github Action
+        if: ${{ !env.ACT }}
+        id: configure_aws_credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: ${{ env.ROLLE_SESSION_NAME }}-${{ github.run_id }}
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+      
+      - name: Configure AWS credentials from IAM Role for Local
+        if: ${{ env.ACT }}
+        id: configure_aws_credentials_local
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: run codebuild
+        uses: aws-actions/aws-codebuild-run-build@v1.0.4
+        with:
+          project-name: ${{ env.CODEBUILD_PROJECT_NAME }}
+          buildspec-override: ./envs/dev/codebuild/configuration/buildspec_destroy_front.yaml
+          env-vars-for-codebuild: |
+            DEPLOY_SUBDOMAIN,
+            SWITCH_TARGET

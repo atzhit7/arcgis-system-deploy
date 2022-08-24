@@ -1,0 +1,69 @@
+# Configuration properties for WebGIS DR Tool
+#
+# Set the JAVA_HOME operating system environment variable to a Java 1.8 or later installation directory.
+#
+
+############################
+########## Portal properties
+############################
+
+# Specify the URL to your portal.
+# Example: 
+# https://webadaptor.domain.com/context
+# or
+# https://portalmachine.domain.com:7443/arcgis
+PORTAL_ADMIN_URL = https://${ arcgisportal_internal_dns }:7443/arcgis
+
+# Provide credentials for the portal administrator.
+# Initially, leave PORTAL_ADMIN_PASSWORD_ENCRYPTED set to false.
+# When you run the tool the first time, the password will be
+# encrypted and PORTAL_ADMIN_PASSWORD_ENCRYPTED will change to true.
+PORTAL_ADMIN_USERNAME = gisadmin
+PORTAL_ADMIN_PASSWORD = ${ portal_adminuser_password }
+PORTAL_ADMIN_PASSWORD_ENCRYPTED = false
+
+# Specify the Web GIS backup restore mode: backup, full or incremental. Default is backup.
+BACKUP_RESTORE_MODE = backup
+
+# Specify a shared location to store the Web GIS backup file. This is where the backups for
+# individual components will be saved to before being moved to the storage that you specify
+# for the BACKUP_STORE_PROVIDER property
+# The following accounts must have read and write permissions on the shared location: 
+# 1) The domain account used to run the web GIS software.
+# 2) The account to run this tool.
+SHARED_LOCATION= \\\\${ arcgisportal_internal_dns }\\backup
+
+# Specify whether to include scene tile caches.
+INCLUDE_SCENE_TILE_CACHES = true
+
+#In cases where the restore takes longer than the default time of 60 minutes, you can define the token expiration time in minutes.
+#TOKEN_EXPIRATION_MINUTES =
+
+####################################
+########## Web GIS backup properties
+####################################
+
+# Specify a storage provider to store the Web GIS backup: FileSystem, AmazonS3, or AzureBlob.
+BACKUP_STORE_PROVIDER = AmazonS3
+
+# Specify the Web GIS backup location if you've set the BACKUP_STORE_PROVIDER to FileSystem.
+# BACKUP_LOCATION = 
+
+#Define the method of compression for the backup.
+#Options are copy, fastest, fast, normal, maximum, ultra. The default is copy
+COMPRESSION_METHOD = fast
+
+# Specify Amazon S3 Storage properties if you've set the BACKUP_STORE_PROVIDER to AmazonS3.
+S3_BUCKET = ${ backup_bucket_name }
+# IAMRole or accessKey
+S3_CREDENTIALTYPE = IAMRole
+S3_REGION = ${ backup_bucket_region }
+# S3_ACCESSKEY = 
+# S3_SECRETKEY = 
+# S3_ENCRYPTED = 
+# Specify a backup name used for the Web GIS restore only.
+# Example: 
+# April-20-2017-5-04-14-PM-PDT-FULL
+# or
+# webgisdr-backup/10-5-1/full/April-20-2017-5-04-14-PM-PDT-FULL
+# S3_BACKUP_NAME =

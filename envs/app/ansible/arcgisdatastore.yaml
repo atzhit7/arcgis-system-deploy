@@ -1,0 +1,35 @@
+---
+- name: deploy arcgis datastore
+  hosts: arcgisdatastorenode
+  become: false
+  roles:
+    - general
+    - common
+    - arcgisdatastore
+  vars_files:
+    - vars_arcgisdatastore.yaml
+    - vars_global.yaml
+
+- name: deploy arcgis datastore for dev
+  hosts: devarcgisdatastorenode
+  become: false
+  roles:
+    - general
+    - common
+    - arcgisdatastore
+  vars_files:
+    - vars_dev_arcgisdatastore.yaml
+    - vars_global.yaml
+
+# - name: deploy arcgis datastore at local
+#   hosts: local_arcgisdatastorenode
+#   become: false
+#   roles:
+#     # - general
+#     - common
+#     - arcgisdatastore
+#   vars_files:
+#     - vars_local_arcgisdatastore.yaml
+#     - vars_local_global.yaml
+  # vars:
+  #     ansible_python_interpreter: c:\Python39\bin

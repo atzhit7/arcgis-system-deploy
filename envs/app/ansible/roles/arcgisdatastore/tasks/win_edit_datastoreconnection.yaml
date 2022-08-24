@@ -1,0 +1,258 @@
+---
+- name: generate token
+  ansible.windows.win_uri:
+    url: "{{ server_generatetoken_endpoint }}"
+    method: POST
+    body: "password={{ server_admin_user_password }}&f=json&username={{ server_admin_user }}&client=referer&referer={{ server_data_endpoint }}&expiration=30"
+    validate_certs: no
+    content_type: application/x-www-form-urlencoded
+    return_content: yes
+    headers:
+      Referer: "https://{{ server_internal_fqdn }}:6443"
+  register: tokenresult
+
+- debug:
+    var: tokenresult
+    
+- debug:
+    var: tokenresult.json.token
+
+# for relational data store
+- name: find items for relational data store
+  ansible.windows.win_uri:
+    url: "{{ server_find_dataitem_endpoint }}?parentPath=/enterpriseDatabases&ancestorPath=&types=egdb&id=&managed=&f=json&token={{ tokenresult.json.token }}"
+    method: GET
+    validate_certs: no
+    content_type: application/json
+    return_content: yes
+    headers:
+      Referer: "{{ server_data_endpoint }}/items"
+  register: dataitemresult
+
+- name: result of data item infomation
+  debug:
+    var: dataitemresult.json
+
+- name: Set the fact of iteminfo
+  set_fact: 
+    iteminfo: "{{ dataitemresult.json }}"
+
+- name: DEBUG - check the iteminfo fact
+  debug:
+    var: iteminfo
+
+- name: DEBUG - check property of item
+  debug:
+    var: iteminfo['items']
+
+- name: DEBUG - check property type of item
+  debug:
+    var: iteminfo|type_debug
+
+- name: DEBUG - loop through list from a variable
+  debug:
+    var: "{{ item|type_debug }}"
+  with_items: "{{ iteminfo['items'] }}"
+
+- name: get and set a fact item property
+  set_fact:
+    items: "{{ iteminfo['items'].0 }}"
+
+- name: Set the tilecache data store path
+  set_fact: 
+    datapath: "{{ items.path }}"
+
+- name: current url value in info dict
+  set_fact:
+    JDBCConnection_url: "{{ item.value }}"
+  with_dict: "{{ items.info.JDBCConnection }}"
+  when: "'url' == item.key"
+
+- name: current connectionString value
+  set_fact:
+    connectionString: "{{ item.value }}"
+  with_dict: "{{ items.info }}"
+  when: "'connectionString' == item.key"
+
+- set_fact:
+    machines: "{{ items.info.machines.0 }}"
+
+- name: current connectionString value
+  set_fact:
+    adminURL  : "{{ item.value }}"
+  with_dict: "{{ machines }}"
+  when: "'adminURL' == item.key"
+
+- set_fact:
+    JDBCConnection_url: "{{ JDBCConnection_url | replace(ansible_facts['nodename'],datastore_internal_fqdn) }}"
+- set_fact:
+    connectionString: "{{ connectionString | replace(ansible_facts['nodename'],datastore_internal_fqdn) }}"
+- set_fact:
+    adminURL: "{{ adminURL | replace(ansible_facts['nodename'],datastore_internal_fqdn) }}"
+
+- name: Change value.
+  set_fact:
+    items: "{{ items|combine({'info': {'JDBCConnection': {'url': JDBCConnection_url}}}, recursive=True) }}"
+- name: Change value.
+  set_fact:
+    items: "{{ items|combine({'info': {'connectionString': connectionString}}, recursive=True) }}"
+- name: Change value.
+  set_fact:
+    machines: "{{ machines|combine({'adminURL': adminURL}, recursive=True) }}"
+
+- name: DEBUG - check the replaced value of machines prop
+  debug:
+    var: machines
+
+- name: Set the replaced item property
+  set_fact:
+    items: "{{ items|combine({'info': {'machines': [ machines ]}}, recursive=True) }}"
+
+- name: DEBUG - check the replaced value.
+  debug:
+    var: items
+
+- name: replace data store connection at server with route53 dns
+  ansible.windows.win_uri:
+    url: "{{ server_data_endpoint }}/items{{ datapath }}/edit"
+    method: POST
+    body: "item={{ items }}&token={{ tokenresult.json.token }}&f=json"
+    validate_certs: no
+    content_type: application/x-www-form-urlencoded
+    return_content: yes
+    headers:
+      Referer: "{{ server_data_endpoint }}/items"
+  register: editdataitemresult
+
+- name: DEBUG - Check the result request of edit datastore connection
+  debug:
+    var: editdataitemresult
+
+# for nosqldatabase aka tileCache
+- name: find items for nosqldatabase data store aka tilecache
+  ansible.windows.win_uri:
+    url: "{{ server_find_dataitem_endpoint }}?parentPath=/nosqlDatabases&ancestorPath=&types=nosql&id=&managed=&f=json&token={{ tokenresult.json.token }}"
+    method: GET
+    validate_certs: no
+    content_type: application/json
+    return_content: yes
+    headers:
+      Referer: "{{ server_find_dataitem_endpoint }}"
+  register: dataitemresult
+
+- name: result of data item infomation
+  debug:
+    var: dataitemresult.json
+
+- name: Set the fact of iteminfo
+  set_fact: 
+    iteminfo: "{{ dataitemresult.json }}"
+
+- name: DEBUG - check the iteminfo fact
+  debug:
+    var: iteminfo
+
+- name: DEBUG - check property of item
+  debug:
+    var: iteminfo['items']
+
+- name: DEBUG - check property type of item
+  debug:
+    var: iteminfo|type_debug
+
+- name: DEBUG - loop through list from a variable
+  debug:
+    var: "{{ item|type_debug }}"
+  with_items: "{{ iteminfo['items'] }}"
+
+- name: get and set a fact item property
+  set_fact:
+    items: "{{ iteminfo['items'].0 }}"
+
+- name: Set the tilecache data store path
+  set_fact: 
+    datapath: "{{ items.path }}"
+
+- name: current hostname value in info
+  set_fact:
+    hostnameInfo: "{{ item.value }}"
+  with_dict: "{{ items.info }}"
+  when: "'hostname' == item.key"
+
+- name: current unqHostname value in info
+  set_fact:
+    unqHostnameInfo: "{{ item.value }}"
+  with_dict: "{{ items.info }}"
+  when: "'unqHostname' == item.key"
+
+- name: replace hostname with fqdn
+  set_fact:
+    hostnameInfo: "{{ hostnameInfo | replace(ansible_facts['nodename'],datastore_internal_fqdn) }}"
+
+- name: replace unqHostname with fqdn
+  set_fact:
+    unqHostnameInfo: "{{ unqHostnameInfo | replace(ansible_facts['nodename'],datastore_internal_fqdn) }}"
+
+- name: current machines nest value
+  set_fact:
+    machines: "{{ items.info.machines.0 }}"
+
+- name: DEBUG - check the value of current machines prop
+  debug:
+    var: machines
+
+- name: current unqhostname under machines list
+  set_fact:
+    unqHostnameMachines  : "{{ item.value }}"
+  with_dict: "{{ machines }}"
+  when: "'unqHostname' == item.key"
+
+- name: current adminURL under machines list
+  set_fact:
+    adminURL  : "{{ item.value }}"
+  with_dict: "{{ machines }}"
+  when: "'adminURL' == item.key"
+
+- name: replace adminURL with fqdn
+  set_fact:
+    adminURL: "{{ adminURL | replace(ansible_facts['nodename'],datastore_internal_fqdn) }}"
+
+- name: replace unqHostname in Machines with fqdn
+  set_fact:
+    unqHostnameMachines: "{{ unqHostnameMachines | replace(ansible_facts['nodename'],datastore_internal_fqdn) }}"
+
+- name: Change hostname in info.
+  set_fact:
+    items: "{{ items|combine({'info': {'hostname': hostnameInfo}}, recursive=True) }}"
+
+- name: Change unqhostname in info.
+  set_fact:
+    items: "{{ items|combine({'info': {'unqHostname': unqHostnameInfo}}, recursive=True) }}"
+
+- name: Change adminUrl.
+  set_fact:
+    machines: "{{ machines|combine({'adminURL': adminURL}, recursive=True) }}"
+
+- name: Change unqHostname.
+  set_fact:
+    machines: "{{ machines|combine({'unqHostname': unqHostnameMachines}, recursive=True) }}"
+
+- name: Change machines.
+  set_fact:
+    items: "{{ items|combine({'info': {'machines': [ machines ]}}, recursive=True) }}"
+
+- name: replace data store connection of tilecache at server with route53 dns
+  ansible.windows.win_uri:
+    url: "{{ server_data_endpoint }}/items{{ datapath }}/edit"
+    method: POST
+    body: "item={{ items }}&token={{ tokenresult.json.token }}&f=json"
+    validate_certs: no
+    content_type: application/x-www-form-urlencoded
+    return_content: yes
+    headers:
+      Referer: "{{ server_data_endpoint }}/items"
+  register: editdataitemresult
+
+- name: DEBUG - Check the result request of edit datastore connection
+  debug:
+    var: editdataitemresult

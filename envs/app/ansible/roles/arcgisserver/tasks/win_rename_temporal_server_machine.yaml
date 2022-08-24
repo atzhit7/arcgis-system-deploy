@@ -1,0 +1,12 @@
+---
+- name: rename arcgis server machine for register datastore
+  ansible.windows.win_uri:
+    url: "{{ renamemachine_endpoint }}"
+    method: POST
+    body: "machineName={{ ansible_facts['nodename'] }}&newMachineName={{ server_internal_fqdn }}&f=json&token={{ tokenresult.json.token }}"
+    validate_certs: no
+    content_type: application/x-www-form-urlencoded
+    return_content: yes
+    headers:
+      Referer: "https://{{ ansible_facts['nodename'] }}:6443"
+  register: rename_machine

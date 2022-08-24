@@ -1,0 +1,25 @@
+---
+- name: check if server is available
+  ansible.windows.win_uri:
+    url: "{{ healthcheck_endpoint }}"
+    method: GET
+    validate_certs: no
+    status_code: 200
+  register: _result
+  until: _result.status_code == 200
+  retries: 60 # 720 * 5 seconds = 1hour (60*60/5)
+  delay: 5 # Every 5 seconds
+
+- name: generate token
+  ansible.windows.win_uri:
+    url: "{{ generatetoken_endpoint }}"
+    method: POST
+    body: "password={{ server_admin_user_password }}&f=json&username={{ server_admin_user }}&client=referer&referer={{ server_admin_root_endpoint }}&expiration=30"
+    validate_certs: no
+    content_type: application/x-www-form-urlencoded
+    return_content: yes
+    status_code: 200
+  register: tokenresult
+
+- debug:
+    var: tokenresult.json.token

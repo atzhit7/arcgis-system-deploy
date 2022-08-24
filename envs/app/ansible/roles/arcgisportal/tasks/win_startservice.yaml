@@ -1,0 +1,7 @@
+---
+- name: start arcgis win service
+  win_service:
+    name: "{{ win_service_name }}"
+    state: restarted
+    start_mode: auto
+

@@ -1,0 +1,31 @@
+---
+- name: Obtain installdir
+  win_reg_stat:
+    path: HKLM:\SOFTWARE\ESRI\ArcGIS_SXS_Server
+    name: InstallDir
+  register: installdir_reg
+
+- debug:
+    var: installdir_reg
+
+- name: overwrite the variable
+  set_fact: 
+    win_install_dir: "{{ installdir_reg.value }}"
+  when: installdir_reg.value is defined
+
+- name: overwrite the variable
+  set_fact: 
+    win_createsite_shell_location: "{{ win_install_dir }}\\tools\\createsite"
+  when: installdir_reg.value is defined
+
+- name: insert hostname properties for route53 dns
+  win_file:
+    path: "{{ win_install_dir }}\\framework\\etc\\hostname.properties"
+    state: touch
+
+- name: insert hostname properties for route53 dns
+  win_lineinfile:
+    path: "{{ win_install_dir }}\\framework\\etc\\hostname.properties"
+    line: "hostname={{ server_internal_fqdn }}"
+    create: yes
+    backup: yes

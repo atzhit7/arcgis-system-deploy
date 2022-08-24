@@ -1,0 +1,24 @@
+---
+# trailing / or \ is not used basically
+arcgisports:
+  - 2443
+  - 9876
+  - 29080
+  - 29081
+choices_datastore_types: "relational,tileCache"
+
+# for Windows
+win_datastore_dir: C:\egihs\arcgisdatastore
+win_service_name: "ArcGIS Data Store"
+# win_datastore_data_dir: D:\dsdata # new parameter for configuredatastore utility, but the current is not used.
+# the following variable is set with system information.
+win_install_dir: C:\ArcGIS # the default value. The ansible task can get the value from registery and overwrite this win_install_dir varibable.
+win_configure_datastore_shell_location: "{{ win_install_dir }}\\tools" # The ansible task can get the value from registery and overwrite this win_install_dir varibable.
+win_configure_datastore_shell: "configuredatastore.bat {{ server_admin_root_endpoint }} {{ server_admin_user }} {{ server_admin_user_password }} {{ win_datastore_dir }} --stores {{ choices_datastore_types }}"
+win_install_cacert_into_TrustedRoot: "Import-Certificate -FilePath {{ win_remote_temp_dest_dir }}\\cacert.cer  -CertStoreLocation 'Cert:\\LocalMachine\\Root'"
+win_update_sslcertificates_shell: "echo Yes|updatesslcertificate.bat {{ win_remote_temp_dest_dir }}\\{{ web_certificate_filename }} %certpassword% {{ web_certificate_alias }}"
+
+# for Linux in the future
+install_dir: /opt
+# handler paramter
+service_name: arcgisdatastore

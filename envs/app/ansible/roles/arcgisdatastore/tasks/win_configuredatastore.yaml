@@ -1,0 +1,10 @@
+---
+- name: configure this with server
+  win_shell: "{{ win_configure_datastore_shell }}"
+  register: configureresult
+  args:
+    chdir: "{{ win_configure_datastore_shell_location }}"
+    executable: cmd.exe
+
+- debug:
+    var: configureresult

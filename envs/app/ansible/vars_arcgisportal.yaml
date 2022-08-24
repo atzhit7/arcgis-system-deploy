@@ -1,0 +1,30 @@
+---
+# trailing / or \ is not used basically
+arcgisports:
+  - 7080
+  - 7443
+createportal_properties_file: ./data/createportal.properties.tmpl
+webgisdr_properties_file: ./data/webgisdr.properties
+admin_endpoint: "https://{{ portal_internal_fqdn }}:7443/arcgis/portaladmin"
+healthcheck_endpoint: "{{ admin_endpoint }}/healthCheck"
+generatetoken_endpoint: "https://{{ portal_internal_fqdn }}:7443/arcgis/sharing/rest/generateToken"
+system_properties_update_endpoint: "{{ admin_endpoint }}/system/properties/update"
+importcacertificate_endpoint: "{{ admin_endpoint }}/machines/{{ portal_internal_fqdn }}/sslCertificates/importRootOrIntermediate"
+importwebcertificate_endpoint: "{{ admin_endpoint }}/machines/{{ portal_internal_fqdn }}/sslCertificates/importExistingServerCertificate"
+updatewebservercertificate_endpoint: "{{ admin_endpoint }}/security/sslCertificates/update"
+certificate_sslprotocols: TLSv1.2, TLSv1.3 
+certificate_ciphersuites: TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384, TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384, TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA, TLS_RSA_WITH_AES_256_GCM_SHA384, TLS_RSA_WITH_AES_256_CBC_SHA256, TLS_RSA_WITH_AES_256_CBC_SHA, TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256, TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA, TLS_RSA_WITH_AES_128_GCM_SHA256, TLS_RSA_WITH_AES_128_CBC_SHA256, TLS_RSA_WITH_AES_128_CBC_SHA, TLS_AES_256_GCM_SHA384, TLS_AES_128_GCM_SHA256, TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384, TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384, TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA, TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256, TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256, TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA
+
+# for Windows
+win_service_name: "Portal for ArcGIS"
+win_backup_dir: C:\arcgisdeployment\backup
+# the following variable is set with system information.
+win_portal_dir: C:\egihs\arcgisportal
+win_install_dir: C:\ArcGIS # the default value. The ansible task can get the value from registery and overwrite this varibable.
+win_createportal_shell_location: "{{ win_install_dir }}\\tools\\createportal" # the default value. The ansible task can get the win_install_dir value from registery and overwrite this varibable.
+win_createportal_shell: "createportal.bat -f {{ win_remote_temp_dest_dir }}\\createportal.properties" # See the terraform template file in the data directory. 
+
+# for Linux in the future
+install_dir: /opt
+# service name parameter
+service_name: arcgisportal

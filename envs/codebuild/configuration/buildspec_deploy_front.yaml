@@ -1,0 +1,31 @@
+---
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - git clone https://github.com/tfutils/tfenv.git ~/.tfenv
+      - ln -s ~/.tfenv/bin/* /usr/local/bin
+  build:
+    commands:
+      - echo $DEPLOY_SUBDOMAIN
+      - echo $DEPLOY_PURPOSE
+      - echo $SWITCH_TARGET
+      #########################
+      - echo "Set for codebuild"
+      - cd ./envs/dev/app/
+      - make for-codebuild
+      #########################
+      - echo "Run Deploy Frontend"
+      - cd ./front/
+      - aws ssm get-parameter --name "/egihssystem/terraform/frontvars" | jq -r .Parameter.Value > ./terraform.tfvars
+      - tfenv use
+      - terraform init -input=false -no-color
+      - terraform workspace show
+      - terraform workspace select $DEPLOY_SUBDOMAIN || terraform workspace new $DEPLOY_SUBDOMAIN
+      - terraform plan -input=false -no-color
+      - terraform apply -input=false -no-color -auto-approve -var='target='$SWITCH_TARGET
+      - echo "congratulations!!"
+  post_build:
+    commands:
+      - echo "Now Finished Front"

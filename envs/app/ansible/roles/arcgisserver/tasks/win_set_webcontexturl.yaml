@@ -1,0 +1,26 @@
+---
+- name: set web contexturl
+  ansible.windows.win_uri:
+    url: "{{ system_properties_update_endpoint }}"
+    method: POST
+    body: "properties={\"WebContextURL\": \"{{ server_webcontext_url }}\"}&f=json&token={{ tokenresult.json.token }}"
+    validate_certs: no
+    content_type: application/x-www-form-urlencoded
+    return_content: yes
+    headers:
+      Referer: "{{ server_admin_root_endpoint }}"
+      # Referer: "{{https://{{ ansible_facts['nodename'] }}:6443}}"
+  register: setwebcontexturl
+  poll: 3
+  async: 60
+
+- name: check if the editing server properties is completed
+  ansible.windows.win_uri:
+    url: "{{ healthcheck_endpoint }}"
+    method: GET
+    validate_certs: no
+    status_code: 200
+  register: _result
+  until: _result.status_code == 200
+  retries: 60 # 720 * 5 seconds = 1hour (60*60/5)
+  delay: 5 # Every 5 seconds

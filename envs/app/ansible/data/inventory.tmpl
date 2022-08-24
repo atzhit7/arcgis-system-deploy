@@ -1,0 +1,19 @@
+arcgisdatastoreinstance ansible_host=${ arcgisdatastorenode_private_dns } ansible_password="${ arcgisdatastorenode_password }"
+arcgisserverinstance ansible_host=${ arcgisservernode_private_dns } ansible_password="${ arcgisservernode_password }"
+arcgisportalinstance ansible_host=${ arcgisportalnode_private_dns } ansible_password="${ arccgisportalnode_password }"
+
+
+[${ deploy_purpose }arcgisdatastorenode]
+arcgisdatastoreinstance
+
+[${ deploy_purpose }arcgisservernode]
+arcgisserverinstance
+
+[${ deploy_purpose }arcgisportalnode]
+arcgisportalinstance
+
+[all:vars]
+ansible_connection=winrm
+ansible_port=5985
+ansible_user=Administrator
+cloud_infrastructure=aws

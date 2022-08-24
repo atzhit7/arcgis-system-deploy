@@ -1,0 +1,22 @@
+---
+- name: health check arcgis server service when not initialized = 500
+  ansible.windows.win_uri:
+    url: "{{ healthcheck_endpoint }}"
+    method: GET
+    validate_certs: no
+    status_code: 500
+  register: _result
+  until: _result.status_code == 500
+  retries: 60
+  delay: 5
+
+- name: create an initial site
+  win_shell: "{{ win_createsite_shell }}"
+  register: createsiteresult
+  args:
+    chdir: "{{ win_createsite_shell_location }}"
+    executable: cmd.exe
+
+- name: check site result
+  debug:
+    msg: "{{ createsiteresult.stdout }}"

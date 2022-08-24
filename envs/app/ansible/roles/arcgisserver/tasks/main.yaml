@@ -1,0 +1,32 @@
+---
+- include_tasks: win_get_install_params.yaml
+  when:
+    - ansible_os_family == "Windows"
+- include_tasks: win_startservice.yaml
+  when:
+    - ansible_os_family == "Windows"
+- include_tasks: win_authorize.yaml
+  when:
+    - ansible_os_family == "Windows"
+- include_tasks: win_createsite.yaml
+  when:
+    - ansible_os_family == "Windows"
+- include_tasks: win_post_createsite.yaml
+  when:
+    - ansible_os_family == "Windows"
+- include_tasks: win_generate_token.yaml
+  when:
+    - ansible_os_family == "Windows"
+- include_tasks: win_import_certificates.yaml
+  when:
+    - ansible_os_family == "Windows"
+- include_tasks: win_update_machine_settings.yaml
+  when:
+    - ansible_os_family == "Windows"
+- include_tasks: win_set_webcontexturl.yaml
+  when:
+    - ansible_os_family == "Windows"
+# - include_tasks: win_rename_temporal_server_machine.yaml
+#   when:
+#     - ansible_os_family == "Windows"
+

@@ -1,0 +1,50 @@
+---
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - python -m pip install --upgrade pip
+      - pip install --upgrade botocore boto3 pywinrm awscli
+      - pip install ansible==5.9.0 ansible-lint
+      - git clone https://github.com/tfutils/tfenv.git ~/.tfenv
+      - ln -s ~/.tfenv/bin/* /usr/local/bin
+  build:
+    commands:
+      - echo $DEPLOY_SUBDOMAIN
+      - echo $DEPLOY_PURPOSE
+      #########################
+      - echo "Set for codebuild"
+      - cd ./envs/dev/app/
+      - make for-codebuild
+      #########################
+      - echo "Run Deploy Green"
+      - cd ./green/
+      - aws ssm get-parameter --name "/egihssystem/terraform/greenvars" | jq -r .Parameter.Value > ./terraform.tfvars
+      - tfenv use
+      - terraform --version
+      - terraform init -input=false -no-color
+      - terraform workspace show
+      - terraform workspace select $DEPLOY_SUBDOMAIN || terraform workspace new $DEPLOY_SUBDOMAIN
+      - terraform plan -input=false -no-color -var='deploy_purpose='$DEPLOY_PURPOSE
+      - terraform apply -input=false -no-color -auto-approve -var='deploy_purpose='$DEPLOY_PURPOSE
+      - cd ../ansible/
+      - cat ./inventory
+      - aws ssm get-parameter --name "/arcgissystem/manage/private-web-sg-id" | jq -r .Parameter.Value > ./private_web_group_id
+      - aws ssm get-parameter --name "/arcgissystem/manage/private-data-sg-id" | jq -r .Parameter.Value > ./private_data_group_id
+      - aws ec2 authorize-security-group-ingress --group-id "$(cat ./private_web_group_id)" --protocol tcp --port 5985 --cidr 0.0.0.0/0
+      - aws ec2 authorize-security-group-ingress --group-id "$(cat ./private_data_group_id)" --protocol tcp --port 5985 --cidr 0.0.0.0/0
+      - ansible arcgisdatastorenode -i ./inventory -m win_ping
+      - ansible-playbook -i ./inventory ./arcgisportal.yaml
+      - ansible-playbook -i ./inventory ./arcgisserver.yaml
+      - ansible-playbook -i ./inventory ./arcgisdatastore.yaml
+      - ansible-playbook -i ./inventory ./federation.yaml
+      - echo "congratulations!!"
+  post_build:
+    commands:
+      - echo "Now Finished Privisioning by Ansible"
+      - echo "close security group"
+      - echo "$PWD"
+      - cd ../ansible/
+      - aws ec2 revoke-security-group-ingress --group-id "$(cat ./private_web_group_id)" --protocol tcp --port 5985 --cidr 0.0.0.0/0
+      - aws ec2 revoke-security-group-ingress --group-id "$(cat ./private_data_group_id)" --protocol tcp --port 5985 --cidr 0.0.0.0/0

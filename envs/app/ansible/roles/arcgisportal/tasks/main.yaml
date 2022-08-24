@@ -1,0 +1,31 @@
+---
+- include_tasks: win_get_install_params.yaml
+  when:
+    - ansible_os_family == "Windows"
+- include_tasks: win_startservice.yaml
+  when:
+    - ansible_os_family == "Windows"
+- include_tasks: win_createportal.yaml
+  when:
+    - ansible_os_family == "Windows"
+- include_tasks: win_post_createportal.yaml
+  when:
+    - ansible_os_family == "Windows"
+- include_tasks: win_generate_token.yaml
+  when:
+    - ansible_os_family == "Windows"
+- include_tasks: win_import_certificates.yaml
+  when:
+    - ansible_os_family == "Windows"
+- include_tasks: win_replace_certificates.yaml
+  when:
+    - ansible_os_family == "Windows"
+# - include_tasks: win_update_oauthapp.yaml
+#   when:
+#     - ansible_os_family == "Windows"
+- include_tasks: win_set_webcontexturl.yaml
+  when:
+    - ansible_os_family == "Windows"
+- include_tasks: win_create_shared_backup_dir.yaml
+  when:
+    - ansible_os_family == "Windows"

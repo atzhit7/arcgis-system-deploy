@@ -1,0 +1,87 @@
+---
+- name: copy the properties file
+  win_copy:
+    src: "{{ createportal_properties_file }}"
+    dest: "{{ win_remote_temp_dest_dir }}\\createportal.properties"
+    force: no
+
+- name: copy authorization file
+  win_shell: "Copy-S3Object -BucketName {{ installer_bucket_name }} -Key {{ portal_authorizationfile }} -LocalFile {{ win_remote_temp_dest_dir }}/{{ portal_authorizationfile }}"
+  when:
+    - cloud_infrastructure is defined
+
+- name: Obtain installdir
+  win_reg_stat:
+    path: HKLM:\SOFTWARE\ESRI\Portal for ArcGIS
+    name: InstallDir
+  register: installdir_reg
+
+- debug:
+    var: installdir_reg
+
+- name: overwrite the variable
+  set_fact: 
+    win_install_dir: "{{ installdir_reg.value }}"
+  when: installdir_reg.value is defined
+
+- name: overwrite the variable
+  set_fact: 
+    win_createportal_shell_location: "{{ win_install_dir }}\\tools\\createportal"
+  when: installdir_reg.value is defined
+
+- name: Obtain installdir
+  win_reg_stat:
+    path: HKLM:\SOFTWARE\ESRI\Portal for ArcGIS
+    name: ContentDir
+  register: contentdir_reg
+
+- name: DEBUG - content directory shown
+  debug:
+    var: contentdir_reg
+
+- name: overwrite the variable
+  set_fact:
+    win_portal_dir: "{{ contentdir_reg.value }}"
+  when: contentdir_reg.value is defined
+
+- name: insert setting into createportal properties file
+  community.windows.win_lineinfile:
+    path: "{{ win_remote_temp_dest_dir }}\\createportal.properties"
+    line: "PORTAL_CONTENT_DIRECTORY = {{ win_portal_dir | replace(backslash, doublebackslash)}}"
+  vars:
+    backslash: "\\"
+    doublebackslash: "\\\\"
+
+- name: set authorization path for properties
+  set_fact:
+    win_authorization_path_prop: "{{ win_remote_temp_dest_dir }}\\{{ portal_authorizationfile }}"
+
+- name: insert authorization path into createportal properties file
+  community.windows.win_lineinfile:
+    path: "{{ win_remote_temp_dest_dir }}\\createportal.properties"
+    line: "PORTAL_LICENSE_FILE = {{ win_authorization_path_prop | replace(backslash, doublebackslash) }}"
+  vars:
+    backslash: "\\"
+    doublebackslash: "\\\\"
+
+- name: insert initial portal username
+  community.windows.win_lineinfile:
+    path: "{{ win_remote_temp_dest_dir }}\\createportal.properties"
+    line: "PORTAL_ADMIN_USERNAME = {{ portal_admin_user }}"
+
+- name: insert initial portal user pw
+  community.windows.win_lineinfile:
+    path: "{{ win_remote_temp_dest_dir }}\\createportal.properties"
+    line: "PORTAL_ADMIN_PASSWORD = {{ portal_admin_user_pw }}"
+
+- name: insert hostname properties for route53 dns
+  win_file:
+    path: "{{ win_install_dir }}\\framework\\etc\\hostname.properties"
+    state: touch
+
+- name: insert hostname properties for route53 dns
+  win_lineinfile:
+    path: "{{ win_install_dir }}\\framework\\etc\\hostname.properties"
+    line: "hostname={{ portal_internal_fqdn }}"
+    create: yes
+    backup: yes

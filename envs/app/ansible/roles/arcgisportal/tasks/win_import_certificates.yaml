@@ -1,0 +1,251 @@
+---
+# require multipart post for web servercert but return 500 error, but succeeded
+- name: multipart post for web servercert
+  ansible.windows.win_powershell:
+    script: |
+      [CmdletBinding()]
+      param (
+        [String]
+        $Url,
+
+        [String]
+        $Token,
+
+        [String]
+        $Referer,
+
+        [String]
+        $CertFilePath,
+
+        [String]
+        $CertAlias,
+
+        [String]
+        $CertPassword
+      )
+
+      [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
+      [System.Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls
+      [System.Net.WebRequest]$webRequest = [System.Net.WebRequest]::Create($Url)
+      $webRequest.ServicePoint.Expect100Continue = $false
+      $webRequest.Method = "POST"
+      $webRequest.Referer = $Referer
+      $webRequest.Timeout = 86400000;
+
+      $webRequest.Headers.Add("f", 'json')
+      $webRequest.Headers.Add("alias", $CertAlias)
+      $webRequest.Headers.Add("password", $CertPassword)
+      $webRequest.Headers.Add("token", $Token)
+      
+      $boundary = [System.Guid]::NewGuid().ToString()
+      $header = "--{0}" -f $boundary
+      $footer = "--{0}--" -f $boundary
+      $webRequest.ContentType = "multipart/form-data; boundary={0}" -f $boundary
+
+      [System.IO.Stream]$reqStream = $webRequest.GetRequestStream()   
+
+      $enc = [System.Text.Encoding]::GetEncoding("UTF-8")
+      $headerPlusNewLine = $header + [System.Environment]::NewLine
+      [byte[]]$headerBytes = $enc.GetBytes($headerPlusNewLine)
+
+      [System.IO.StreamWriter]$streamWriter = New-Object 'System.IO.StreamWriter' -ArgumentList $reqStream
+      [void]$streamWriter.WriteLine($header)
+      [void]$streamWriter.WriteLine("Content-Disposition: form-data; name=""alias""")
+      [void]$streamWriter.WriteLine("")
+      [void]$streamWriter.WriteLine($CertAlias)
+      [void]$streamWriter.WriteLine($header)
+      [void]$streamWriter.WriteLine("Content-Disposition: form-data; name=""password""")
+      [void]$streamWriter.WriteLine("")
+      [void]$streamWriter.WriteLine($CertPassword)
+      [void]$streamWriter.WriteLine($header)
+      [void]$streamWriter.WriteLine("Content-Disposition: form-data; name=""f""")
+      [void]$streamWriter.WriteLine("")
+      [void]$streamWriter.WriteLine('json')
+      [void]$streamWriter.WriteLine($header)
+      [void]$streamWriter.WriteLine("Content-Disposition: form-data; name=""token""")
+      [void]$streamWriter.WriteLine("")
+      [void]$streamWriter.WriteLine($Token)
+
+      $streamWriter.Flush()
+
+      $fileName = (Get-Item -Path $CertFilePath).Name
+      
+      [void]$reqStream.Write($headerBytes,0, $headerBytes.Length)
+      [System.IO.FileInfo]$fileInfo = New-Object "System.IO.FileInfo" -ArgumentList $CertFilePath
+
+      $fileHeader = "Content-Disposition: form-data; name=""file""; filename=""{0}""" -f $fileName
+
+      $fileHeader = $fileHeader + [System.Environment]::NewLine    
+      [byte[]]$fileHeaderBytes = $enc.GetBytes($fileHeader)
+      [void]$reqStream.Write($fileHeaderBytes,0, $fileHeaderBytes.Length)
+
+      [string]$fileContentTypeStr = "Content-Type: application/x-pkcs12"
+
+      $fileContentTypeStr = $fileContentTypeStr + [System.Environment]::NewLine + [System.Environment]::NewLine
+
+      [byte[]]$fileContentTypeBytes = $enc.GetBytes($fileContentTypeStr)
+
+      [void]$reqStream.Write($fileContentTypeBytes,0, $fileContentTypeBytes.Length)
+
+      [System.IO.FileStream]$fileStream = New-Object 'System.IO.FileStream' -ArgumentList @($CertFilePath, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read)
+      $fileStream.CopyTo($reqStream)
+      $fileStream.Flush()
+      $fileStream.Close()
+
+      [void]$streamWriter.WriteLine("")        
+      [void]$streamWriter.WriteLine($footer)
+      $streamWriter.Flush()
+
+      $resp = $null
+      try {
+        
+        $resp = $webRequest.GetResponse()
+      } catch {
+        Write-Verbose "[WARNING] error $_"
+      }
+      
+      if($resp) {
+        $rs = $resp.GetResponseStream()
+        [System.IO.StreamReader]$sr = New-Object System.IO.StreamReader -argumentList $rs
+        $sr.ReadToEnd()
+      }else {
+        $null
+      }
+    parameters:
+      CertFilePath: "{{ win_remote_temp_dest_dir }}\\{{ web_certificate_filename }}"
+      CertPassword: "{{ servercertpassword }}"
+      CertAlias: "{{ web_certificate_alias }}"
+      Url: "{{ importwebcertificate_endpoint }}"
+      Token: "{{ tokenresult.json.token }}"
+      Referer: "{{ portal_admin_root_endpoint }}"
+      # Referer: "https://{{ ansible_facts['nodename'] }}:7443"
+  register: importwebresult
+
+# require multipart post for rootca
+- name: multipart post for rootca
+  ansible.windows.win_powershell:
+    script: |
+      [CmdletBinding()]
+      param (
+        [String]
+        $Url,
+
+        [String]
+        $Referer,
+
+        [String]
+        $Token,
+
+        [String]
+        $CertFilePath,
+
+        [String]
+        $CertAlias,
+
+        [Boolean]
+        $NoRestart=$true
+      )
+
+      [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
+      [System.Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls
+      [System.Net.WebRequest]$webRequest = [System.Net.WebRequest]::Create($Url)
+      $webRequest.ServicePoint.Expect100Continue = $false
+      $webRequest.Method = "POST"
+      $webRequest.Referer = $Referer
+      $webRequest.Timeout = 86400000;
+
+      $webRequest.Headers.Add("f", 'json')
+      $webRequest.Headers.Add("alias", $CertAlias)
+      $webRequest.Headers.Add("token", $Token)
+      $webRequest.Headers.Add("norestart", $NoRestart)
+      
+      $boundary = [System.Guid]::NewGuid().ToString()
+      $header = "--{0}" -f $boundary
+      $footer = "--{0}--" -f $boundary
+      $webRequest.ContentType = "multipart/form-data; boundary={0}" -f $boundary
+
+      [System.IO.Stream]$reqStream = $webRequest.GetRequestStream()   
+
+      $enc = [System.Text.Encoding]::GetEncoding("UTF-8")
+      $headerPlusNewLine = $header + [System.Environment]::NewLine
+      [byte[]]$headerBytes = $enc.GetBytes($headerPlusNewLine)
+
+      [System.IO.StreamWriter]$streamWriter = New-Object 'System.IO.StreamWriter' -ArgumentList $reqStream
+      [void]$streamWriter.WriteLine($header)
+      [void]$streamWriter.WriteLine("Content-Disposition: form-data; name=""alias""")
+      [void]$streamWriter.WriteLine("")
+      [void]$streamWriter.WriteLine($CertAlias)
+      [void]$streamWriter.WriteLine($header)
+      [void]$streamWriter.WriteLine("Content-Disposition: form-data; name=""norestart""")
+      [void]$streamWriter.WriteLine("")
+      [void]$streamWriter.WriteLine($NoRestart)
+      [void]$streamWriter.WriteLine($header)
+      [void]$streamWriter.WriteLine("Content-Disposition: form-data; name=""f""")
+      [void]$streamWriter.WriteLine("")
+      [void]$streamWriter.WriteLine('json')
+      [void]$streamWriter.WriteLine($header)
+      [void]$streamWriter.WriteLine("Content-Disposition: form-data; name=""token""")
+      [void]$streamWriter.WriteLine("")
+      [void]$streamWriter.WriteLine($Token)
+
+      $streamWriter.Flush()
+
+      $fileName = (Get-Item -Path $CertFilePath).Name
+
+      [void]$reqStream.Write($headerBytes,0, $headerBytes.Length)
+      [System.IO.FileInfo]$fileInfo = New-Object "System.IO.FileInfo" -ArgumentList $CertFilePath
+
+      $fileHeader = "Content-Disposition: form-data; name=""file""; filename=""{0}""" -f $fileName
+
+      $fileHeader = $fileHeader + [System.Environment]::NewLine
+      [byte[]]$fileHeaderBytes = $enc.GetBytes($fileHeader)
+      [void]$reqStream.Write($fileHeaderBytes,0, $fileHeaderBytes.Length)
+
+      [string]$fileContentTypeStr = "Content-Type: application/x-x509-ca-cert"
+
+      $fileContentTypeStr = $fileContentTypeStr + [System.Environment]::NewLine + [System.Environment]::NewLine
+
+      [byte[]]$fileContentTypeBytes = $enc.GetBytes($fileContentTypeStr)
+
+      [void]$reqStream.Write($fileContentTypeBytes,0, $fileContentTypeBytes.Length)
+
+      [System.IO.FileStream]$fileStream = New-Object 'System.IO.FileStream' -ArgumentList @($CertFilePath, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read)
+      $fileStream.CopyTo($reqStream)
+      $fileStream.Flush()
+      $fileStream.Close()
+
+      [void]$streamWriter.WriteLine("")        
+      [void]$streamWriter.WriteLine($footer)
+      $streamWriter.Flush()
+
+      $resp = $null
+      try {
+        $resp =  $webRequest.GetResponse()
+      } catch {
+        Write-Verbose "[WARNING] error $_"
+      }
+
+      if($resp) {
+        $rs = $resp.GetResponseStream()
+        [System.IO.StreamReader]$sr = New-Object System.IO.StreamReader -argumentList $rs
+        $sr.ReadToEnd()
+      } else {
+        $null
+      }
+    parameters:
+      CertFilePath: "{{ win_remote_temp_dest_dir }}\\{{ ca_certificate_filename }}"
+      CertAlias: "{{ ca_certificate_alias }}"
+      Url: "{{ importcacertificate_endpoint }}"
+      Token: "{{ tokenresult.json.token }}"
+      Referer: "{{ portal_admin_root_endpoint }}"
+      # Referer: "https://{{ ansible_facts['nodename'] }}:7443"
+  register: importcaresult
+
+- name: check if import server cert
+  debug:
+    var: importwebresult
+    
+- name: check if import ca cert
+  debug:
+    var: importcaresult
+

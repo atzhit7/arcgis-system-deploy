@@ -1,0 +1,54 @@
+---
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - git clone https://github.com/tfutils/tfenv.git ~/.tfenv
+      - ln -s ~/.tfenv/bin/* /usr/local/bin
+  build:
+    commands:
+      - echo $DEPLOY_SUBDOMAIN
+      - echo $DEPLOY_PURPOSE
+      #########################
+      - echo "Set for codebuild"
+      - cd ./envs/dev/app/
+      - make for-codebuild
+      #########################
+      - echo "destroy front"
+      - cd ./front/
+      - aws ssm get-parameter --name "/egihssystem/terraform/frontvars" | jq -r .Parameter.Value > ./terraform.tfvars
+      - tfenv use
+      - terraform --version
+      - terraform init -input=false -no-color
+      - terraform workspace show
+      - terraform workspace select $DEPLOY_SUBDOMAIN || terraform workspace new $DEPLOY_SUBDOMAIN
+      - terraform plan -input=false -no-color
+      - terraform destroy -input=false -no-color -auto-approve
+      #########################
+      - echo "destroy blue"
+      - cd ../blue/
+      - aws ssm get-parameter --name "/egihssystem/terraform/bluevars" | jq -r .Parameter.Value > ./terraform.tfvars
+      - tfenv install
+      - tfenv use
+      - terraform --version
+      - terraform init -input=false -no-color
+      - terraform workspace show
+      - terraform workspace select $DEPLOY_SUBDOMAIN || terraform workspace new $DEPLOY_SUBDOMAIN
+      - terraform plan -input=false -no-color -var='deploy_purpose='$DEPLOY_PURPOSE
+      - terraform destroy -input=false -no-color -auto-approve -var='deploy_purpose='$DEPLOY_PURPOSE
+      #########################
+      - echo "destroy green"
+      - cd ../green/
+      - aws ssm get-parameter --name "/egihssystem/terraform/greenvars" | jq -r .Parameter.Value > ./terraform.tfvars
+      - tfenv use
+      - terraform --version
+      - terraform init -input=false -no-color
+      - terraform workspace show
+      - terraform workspace select $DEPLOY_SUBDOMAIN || terraform workspace new $DEPLOY_SUBDOMAIN
+      - terraform plan -input=false -no-color -var='deploy_purpose='$DEPLOY_PURPOSE
+      - terraform destroy -input=false -no-color -auto-approve -var='deploy_purpose='$DEPLOY_PURPOSE
+      - echo "Good bye the existing deployment"
+  post_build:
+    commands:
+      - echo "Now Finished Destroy"

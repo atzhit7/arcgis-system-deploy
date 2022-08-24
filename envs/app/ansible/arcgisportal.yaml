@@ -1,0 +1,35 @@
+---
+- name: deploy arcgis portal
+  hosts: arcgisportalnode
+  become: false
+  roles:
+    - general
+    - common
+    - arcgisportal
+  vars_files:
+    - vars_arcgisportal.yaml
+    - vars_global.yaml
+
+- name: deploy arcgis portal for dev
+  hosts: devarcgisportalnode
+  become: false
+  roles:
+    - general
+    - common
+    - arcgisportal
+  vars_files:
+    - vars_dev_arcgisportal.yaml
+    - vars_global.yaml
+
+# - name: deploy arcgis portal at local
+#   hosts: local_arcgisportalnode
+#   become: false
+#   roles:
+#     # - general
+#     - common
+#     - arcgisportal
+#   vars_files:
+#     - vars_local_arcgisportal.yaml
+#     - vars_local_global.yaml
+  # vars:
+  #     ansible_python_interpreter: c:\Python39\bin

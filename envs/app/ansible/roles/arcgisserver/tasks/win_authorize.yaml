@@ -1,0 +1,10 @@
+---
+- name: copy authorization file
+  win_shell: "Copy-S3Object -BucketName {{ installer_bucket_name }} -Key {{ server_authorizationfile }} -LocalFile {{ win_remote_temp_dest_dir }}/{{ server_authorizationfile }}"
+  when:
+    - cloud_infrastructure is defined
+
+- name: software authorization
+  win_shell: "{{ win_authorize_software_shell }}"
+  args:
+    executable: cmd.exe

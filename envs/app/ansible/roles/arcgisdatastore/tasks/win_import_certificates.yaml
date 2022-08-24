@@ -1,0 +1,31 @@
+---
+- name: set user env for updatessl...
+  ansible.windows.win_powershell:
+    script: |
+      [CmdletBinding()]
+      param (
+        [String]
+        $certPW
+      )
+
+      [System.Environment]::SetEnvironmentVariable('certpassword',"$certPW",[System.EnvironmentVariableTarget]::User)
+    parameters:
+      certPW: "{{ servercertpassword }}"
+
+- name: update the sslcertificate
+  win_shell: "{{ win_update_sslcertificates_shell }}"
+  args:
+    chdir: "{{ win_configure_datastore_shell_location }}"
+    executable: cmd.exe
+  poll: 3
+  async: 30
+  register: update_datastore_webcert
+  failed_when: false
+
+- debug:
+    var: update_datastore_webcert
+
+- name: remove user env for updatessl...
+  ansible.windows.win_powershell:
+    script: |
+      [System.Environment]::SetEnvironmentVariable('certpassword',$null,[System.EnvironmentVariableTarget]::User)

@@ -1,0 +1,53 @@
+# global variables in whole deployment
+selfsignedcert_dnsnames: "*.${ domain },*.blue.${ domain },*.green.${ domain }" # system provide
+selfsignedcert_commonname: "*.${ domain }" # system provide
+server_internal_fqdn: ${ arcgisserver_internal_dns } # system provide
+portal_internal_fqdn: ${ arcgisportal_internal_dns } # system provide
+datastore_internal_fqdn: ${ arcgisdatastore_internal_dns } # system provide
+server_public_fqdn: ${ arcgisserver_public_dns } # system provide
+portal_public_fqdn: ${ arcgisportal_public_dns } # system provide
+webcontext_url: "https://{{ portal_public_fqdn }}/arcgis"
+server_webcontext_url: "https://{{ server_public_fqdn }}/arcgis"
+# rest api endpoint with internal fqdn using from other machines
+server_admin_root_endpoint: "https://{{ server_internal_fqdn }}:6443/arcgis"
+server_healthcheck_endpoint: "https://{{ server_internal_fqdn }}:6443/arcgis/rest/info/healthCheck"
+server_generatetoken_endpoint: "https://{{ server_internal_fqdn }}:6443/arcgis/admin/generateToken"
+server_renamemachine_endpoint: "https://{{ server_internal_fqdn }}:6443/arcgis/admin/machines/rename"
+server_data_endpoint: "https://{{ server_internal_fqdn }}:6443/arcgis/admin/data"
+server_find_dataitem_endpoint: "https://{{ server_internal_fqdn }}:6443/arcgis/admin/data/findItems"
+portal_admin_root_endpoint: "https://{{ portal_internal_fqdn }}:7443/arcgis"
+portal_healthcheck_endpoint: "https://{{ portal_internal_fqdn }}:7443/arcgis/portaladmin/healthCheck"
+portal_generatetoken_endpoint: "https://{{ portal_internal_fqdn }}:7443/arcgis/sharing/rest/generateToken"
+federation_endpoint: "https://{{ portal_internal_fqdn }}:7443/arcgis/portaladmin/federation"
+datastore_webserver_endpoint: "https://{{ datastore_internal_fqdn }}:2443/arcgis/datastore"
+
+# server admin user
+server_admin_user: siteadmin
+server_admin_user_password: ${ server_adminuser_password } # system provide
+# portal initial admin user
+portal_admin_user: gisadmin
+portal_admin_user_pw: ${ portal_adminuser_password } # system provide
+# arcgis service account
+arcgis_service_account: arcgis_sa
+arcgis_service_account_pw: ${ arcgis_service_account_password }
+server_authorizationfile: arcgisserver.ecp
+portal_authorizationfile: arcgisportal.json
+
+# aws s3 information
+installer_bucket_name: egihs-arcgis-installer
+logs_bucket_name: egihs-goldenimage-logs
+
+controller_local_data_dir: ./data
+ca_certificate_filename: cacert.cer
+ca_certificate_alias: selfcacertificate
+web_certificate_filename: servercert.pfx
+web_certificate_alias: selfwebcertificate
+servercertpassword: ${ servercert_password }
+
+# common variables in each OS family no prefix is for linux.
+remote_temp_dest_dir: /tmp/arcgis
+remote_extract_dest_dir: /home/agent_sa/setup
+
+win_remote_temp_dest_dir: C:\arcgisdeployment\temp
+win_remote_extract_dest_dir: C:\arcgisdeployment\extract
+

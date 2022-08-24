@@ -1,0 +1,61 @@
+name: DESTORY DEV Manual Action to deploy ArcGIS Enterprise deployment
+# on:
+#   push:
+#     paths:
+#       - 'envs/dev/infra/*.tf'
+#       - 'envs/dev/infra/*.tfvars'
+##########################
+### Run Manually       ###
+##########################
+on: 
+  workflow_dispatch:
+    inputs:
+      subdomain:
+        required: true
+        default: "seed1"
+      deploypurpose:
+        required: false
+        default: "dev"
+      switchtarget:
+        type: choice
+        description: switch target
+        options: 
+        - blue
+        - green
+
+env:
+  # set with your preferred AWS region, e.g. us-west-1
+  AWS_REGION: ap-southeast-2
+  # set with GitHub Actions role name
+  AWS_ROLE_ARN: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-action-to-ec2
+  ROLLE_SESSION_NAME: GithubAction-PackerBuild
+  CODEBUILD_PROJECT_NAME: ${{ secrets.AWS_CODEBUILD_PROJECT }}
+  DEPLOY_SUBDOMAIN: ${{ github.event.inputs.subdomain }}
+  DEPLOY_PURPOSE: ${{ github.event.inputs.deploypurpose }}
+  SWITCH_TARGET: ${{ github.event.inputs.switchtarget }}
+
+defaults:
+  run:
+    working-directory: ./envs/
+
+jobs:
+  destroy-front:
+    uses: ./.github/workflows/destroy-dev-arcgis-system-deploy-app-front.yaml
+    # if manual-run, please comment out the following
+    # if: contains(toJSON(github.event.commits.*.message), '@destroy-aws')
+    with:
+      subdomain: ${{ env.DEPLOY_SUBDOMAIN }}
+      switchtarget: ${{ env.SWITCH_TARGET }}
+  destroy-blue:
+    needs: destroy-front
+    uses: ./.github/workflows/destroy-dev-arcgis-system-deploy-app-blue.yaml
+    with:
+      subdomain: ${{ env.DEPLOY_SUBDOMAIN }}
+      deploypurpose: ${{ env.DEPLOY_PURPOSE }}
+  destroy-green:
+    needs: destroy-front
+    uses: ./.github/workflows/destroy-dev-arcgis-system-deploy-app-green.yaml
+    with:
+      subdomain: ${{ env.DEPLOY_SUBDOMAIN }}
+      deploypurpose: ${{ env.DEPLOY_PURPOSE }}
+  

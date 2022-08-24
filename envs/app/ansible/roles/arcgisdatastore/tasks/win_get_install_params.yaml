@@ -1,0 +1,28 @@
+---
+- name: Obtain installdir
+  win_reg_stat:
+    path: HKLM:\SOFTWARE\ESRI\ArcGIS Data Store
+    name: InstallDir
+  register: installdir_reg
+
+- debug:
+    var: installdir_reg
+
+- name: overwrite the variable
+  set_fact: 
+    win_install_dir: "{{ installdir_reg.value }}"
+  when: installdir_reg.value is defined
+
+- name: insert hostname properties for route53 dns
+  win_lineinfile:
+    path: "{{ win_install_dir }}\\framework\\etc\\hostidentifier.properties"
+    line: "hostidentifier={{ datastore_internal_fqdn }}"
+    create: yes
+    backup: yes
+
+- name: insert hostname properties for route53 dns
+  win_lineinfile:
+    path: "{{ win_install_dir }}\\framework\\etc\\hostidentifier.properties"
+    line: "preferredidentifier=hostname"
+    create: yes
+    backup: yes
