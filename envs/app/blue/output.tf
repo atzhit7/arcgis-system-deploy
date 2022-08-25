@@ -13,19 +13,19 @@ data "aws_region" "current" {}
 data "aws_kms_secrets" "parameters" {
   secret {
     name    = "servercert_password"
-    payload = "AQICAHhUFtVtZ8rXUOd48hiZ4xgOlGIF7DFztsU4r1Uo9Zea1gFl8qNyUnZAUSY7T30SqLQNAAAAaTBnBgkqhkiG9w0BBwagWjBYAgEAMFMGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMpRW5MELY180EtqJPAgEQgCZ9nGDh7tRLHqyWTiyDKpmiMM7NcUhkgQMYociV9QXnoBppnIyTLQ=="
+    payload = var.payload_servercert
   }
   secret {
     name    = "portaladmin_password"
-    payload = "AQICAHhUFtVtZ8rXUOd48hiZ4xgOlGIF7DFztsU4r1Uo9Zea1gEN5M0CiEfVvV1n9+flHto6AAAAaDBmBgkqhkiG9w0BBwagWTBXAgEAMFIGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMwtfkY/nw/p755vt0AgEQgCUz+GbgW1cl6fWkrMytCSRbLrfd4uX5sp57hIXftQY+I4YoxKkS"
+    payload = var.payload_portaladmin
   }
   secret {
     name    = "serveradmin_password"
-    payload = "AQICAHhUFtVtZ8rXUOd48hiZ4xgOlGIF7DFztsU4r1Uo9Zea1gGKzIcLKgk67K+KhOcLt6SZAAAAbTBrBgkqhkiG9w0BBwagXjBcAgEAMFcGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMWCyN1KE9KW4DYO2uAgEQgCqlALU4tj+bzQlGEfGCzJIUphmEylSkUH4HA49mnpGqzGRbI2oL6uIY+RA="
+    payload = var.payload_serveradmin
   }
   secret {
     name    = "serviceaccount_password"
-    payload = "AQICAHhUFtVtZ8rXUOd48hiZ4xgOlGIF7DFztsU4r1Uo9Zea1gEIerDJRHO8f+soyV2iiMl/AAAAbTBrBgkqhkiG9w0BBwagXjBcAgEAMFcGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMdWBnTfTSWtOxWGz3AgEQgCp40Dahz65uHsJmwxuej3SAHgWhEi43J3NAAhJvAOADrxL5oho/1vEHvos="
+    payload = var.payload_serviceaccount
   }
 }
 

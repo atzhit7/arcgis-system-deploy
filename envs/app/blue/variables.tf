@@ -18,6 +18,26 @@ variable "deploy_purpose" {
   description = "purpose of deployment, prod or dev. specified with command only"
   default     = ""
 }
+variable "payload_servercert" {
+  type        = string
+  description = "The payload for server certificate password to encrypt with kms"
+  default     = ""
+}
+variable "payload_portaladmin" {
+  type        = string
+  description = "The payload for portaladmin password to encrypt with kms"
+  default     = ""
+}
+variable "payload_serveradmin" {
+  type        = string
+  description = "The payload for serveradmin password to encrypt with kms"
+  default     = ""
+}
+variable "payload_serviceaccount" {
+  type        = string
+  description = "The payload for serviceaccount password to encrypt with kms"
+  default     = ""
+}
 data "aws_ami" "arcgisserver" {
   most_recent = true
   name_regex  = "^${var.deploy_purpose}-arcgisserver"
