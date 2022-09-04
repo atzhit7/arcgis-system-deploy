@@ -2,6 +2,9 @@
 - include_tasks: win_get_install_params.yaml
   when:
     - ansible_os_family == "Windows"
+- include_tasks: win_change_serviceaccount.yaml 
+  when:
+    - ansible_os_family == "Windows"
 - include_tasks: win_startservice.yaml
   when:
     - ansible_os_family == "Windows"
@@ -29,3 +32,35 @@
 - include_tasks: win_create_shared_backup_dir.yaml
   when:
     - ansible_os_family == "Windows"
+
+### Linux
+- include_tasks: backupdir.yaml
+  when:
+    - ansible_distribution in ['RedHat','CentOS', 'Debian', 'Ubuntu']
+- include_tasks: copy_auth_setup_file.yaml
+  when:
+    - ansible_distribution in ['RedHat','CentOS', 'Debian', 'Ubuntu']
+- include_tasks: get_install_params.yaml
+  when:
+    - ansible_distribution in ['RedHat','CentOS', 'Debian', 'Ubuntu']
+- include_tasks: startservice.yaml
+  when:
+    - ansible_distribution in ['RedHat','CentOS', 'Debian', 'Ubuntu']
+- include_tasks: createportal.yaml
+  when:
+    - ansible_distribution in ['RedHat','CentOS', 'Debian', 'Ubuntu']
+- include_tasks: post_createportal.yaml
+  when:
+    - ansible_distribution in ['RedHat','CentOS', 'Debian', 'Ubuntu']
+- include_tasks: generate_token.yaml
+  when:
+    - ansible_distribution in ['RedHat','CentOS', 'Debian', 'Ubuntu']
+- include_tasks: import_certificates.yaml
+  when:
+    - ansible_distribution in ['RedHat','CentOS', 'Debian', 'Ubuntu']
+- include_tasks: replace_certificates.yaml
+  when:
+    - ansible_distribution in ['RedHat','CentOS', 'Debian', 'Ubuntu']
+- include_tasks: set_webcontexturl.yaml
+  when:
+    - ansible_distribution in ['RedHat','CentOS', 'Debian', 'Ubuntu']

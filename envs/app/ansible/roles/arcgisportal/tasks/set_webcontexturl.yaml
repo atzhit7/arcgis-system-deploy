@@ -1,0 +1,34 @@
+---
+- name: replace certificates
+  uri:
+    url: "{{ system_properties_update_endpoint }}"
+    method: POST
+    body: "properties={\"WebContextURL\": \"{{ webcontext_url }}\"}&f=json&token={{ tokenresult.json.token }}"
+    validate_certs: no
+    return_content: yes
+    body_format: form-urlencoded
+    status_code: [200, 302]
+    headers:
+      Referer: "https://{{ portal_internal_fqdn }}:7443"
+  register: edit_webcontexturl
+  poll: 0
+  async: 60
+
+- name: pause time for upgrade replace certificate
+  pause:
+    seconds: 180
+
+- name: check if site available
+  uri:
+    url: "{{ healthcheck_endpoint }}"
+    method: GET
+    validate_certs: no
+    status_code: 200
+  register: _result
+  until: _result.status == 200
+  retries: 60 # 720 * 5 seconds = 1hour (60*60/5)
+  delay: 5 # Every 5 seconds
+
+- name: check if the site is up
+  debug:
+    var: _result

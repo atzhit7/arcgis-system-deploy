@@ -1,0 +1,23 @@
+# - name: copy authorization file
+#   shell: "aws s3 cp s3://{{ installer_bucket_name }}/{{ portal_authorizationfile }} {{ remote_temp_dest_dir }}/{{ portal_authorizationfile }}"
+#   when:
+#     - cloud_infrastructure is defined
+
+- name: copy authorization file
+  copy:
+    src: "{{ portal_local_authorizationfile }}"
+    dest: "{{ remote_temp_dest_dir }}/arcgisportal.json"
+    mode: 0755
+    owner: "{{ arcgis_service_account }}"
+    force: no
+  when:
+    - cloud_infrastructure is not defined
+
+- name: copy the properties file
+  copy:
+    src: "{{ createportal_properties_file }}"
+    dest: "{{ remote_temp_dest_dir }}/createportal.properties"
+    mode: 0755
+    owner: "{{ arcgis_service_account }}"
+    force: no
+    backup: yes

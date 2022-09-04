@@ -1,0 +1,65 @@
+- name: Read existing ca certificate
+  slurp:
+    src: "{{ remote_temp_dest_dir }}/webcert.pfx"
+  run_once: true
+  register: webcertread
+
+- name: import web certificate
+  uri:
+    url: "{{ importwebcertificate_endpoint }}"
+    method: POST
+    body:
+      alias: "{{ web_certificate_alias }}"
+      token: "{{ tokenresult.json.token }}"
+      password: "{{ servercertpassword }}"
+      f: json
+      file:
+        filename: "{{ remote_temp_dest_dir }}/webcert.pfx"
+        mime_type: application/x-pkcs12
+    headers:
+      Referer: "https://{{ portal_internal_fqdn }}:7443"
+    validate_certs: no
+    body_format: form-multipart
+    return_content: yes
+    status_code: [200, 302]
+    remote_src: yes
+  register: importwebresult
+
+- name: import web certificate shell
+  shell: "curl -X POST -F 'alias={{ web_certificate_alias }}' -F 'password={{ servercertpassword }}' -F 'token={{ tokenresult.json.token }}' -F 'f=json' -F file=@{{ remote_temp_dest_dir }}/webcert.pfx --insecure {{ importwebcertificate_endpoint }}"
+  register: importwebresultshell
+  args:
+    executable: /bin/bash
+
+- name: import ca certificate
+  uri:
+    url: "{{ importcacertificate_endpoint }}"
+    method: POST
+    body:
+      alias: "{{ ca_certificate_alias }}"
+      token: "{{ tokenresult.json.token }}"
+      norestart: "true"
+      f: json
+      file:
+        filename: "{{ remote_temp_dest_dir }}/cacert.pem"
+        mime_type: application/x-x509-ca-cert
+    headers: 
+      Referer: "https://{{ portal_internal_fqdn }}:7443"
+    validate_certs: no
+    body_format: form-multipart
+    return_content: yes
+    status_code: [200, 302, 303]
+    remote_src: yes
+  register: importcaresult
+
+- name: import ca certificate shell
+  shell: "curl -X POST -F 'alias={{ ca_certificate_alias }}' -F 'norestart=true' -F 'token={{ tokenresult.json.token }}' -F 'f=json' -F file=@{{ remote_temp_dest_dir }}/cacert.pem --insecure {{ importcacertificate_endpoint }}"
+  register: importcaresultshell
+  args:
+    executable: /bin/bash
+
+
+- debug:
+    var: importcaresult
+- debug:
+    var: importwebresult

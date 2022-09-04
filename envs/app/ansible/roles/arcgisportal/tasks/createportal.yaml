@@ -1,0 +1,34 @@
+---
+- name: health check arcgis service
+  uri:
+    url: "{{ healthcheck_endpoint }}"
+    method: GET
+    validate_certs: no
+    status_code: [500, 200]
+  register: _result
+  until: _result.status == 500 or _result.status == 200
+  retries: 60 # 720 * 5 seconds = 1hour (60*60/5)
+  delay: 5 # Every 5 seconds
+
+- name: View the result of request
+  debug:
+    var: _result
+
+- name: check location
+  debug:
+    var: createportal_shell_location
+
+- name: create portal site
+  shell: "{{ createportal_shell }}"
+  become: yes
+  become_user: "{{ arcgis_service_account }}"
+  register: createportalresult
+  args:
+    chdir: "{{ createportal_shell_location }}"
+    executable: /bin/bash
+  when: _result.status == 500
+
+- name: check portal result
+  debug:
+    msg: "{{ createportalresult.stdout }}"
+  when: _result.status == 500

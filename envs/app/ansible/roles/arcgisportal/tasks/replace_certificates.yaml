@@ -1,0 +1,32 @@
+---
+- name: replace certificates
+  uri:
+    url: "{{ updatewebservercertificate_endpoint }}"
+    method: POST
+    body: "webServerCertificateAlias={{ web_certificate_alias }}&sslProtocols={{ certificate_sslprotocols }}&cipherSuites={{ certificate_ciphersuites }}&f=json&token={{ tokenresult.json.token }}"
+    validate_certs: no
+    return_content: yes
+    body_format: form-urlencoded
+    status_code: [200, 302]
+    headers:
+      Referer: "https://{{ portal_internal_fqdn }}:7443"
+  register: replace_servercert
+
+- name: pause time for upgrade replace certificate
+  pause:
+    seconds: 60
+
+- name: check if site available
+  uri:
+    url: "{{ healthcheck_endpoint }}"
+    method: GET
+    validate_certs: no
+    status_code: 200
+  register: _result
+  until: _result.status == 200
+  retries: 60 # 720 * 5 seconds = 1hour (60*60/5)
+  delay: 5 # Every 5 seconds
+
+- name: check if the site is up
+  debug:
+    var: _result

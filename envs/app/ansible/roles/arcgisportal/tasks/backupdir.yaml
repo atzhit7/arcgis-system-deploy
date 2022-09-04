@@ -1,0 +1,7 @@
+---
+- name: create the backup directory
+  file:
+    path: "{{ remote_temp_dest_dir }}/backup"
+    state: directory
+    owner: "{{ arcgis_service_account }}"
+    mode: 0755
