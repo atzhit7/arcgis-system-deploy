@@ -1,0 +1,43 @@
+---
+- name: check if server is available
+  uri:
+    url: "{{ healthcheck_endpoint }}"
+    method: GET
+    validate_certs: no
+    status_code: 200
+  register: _result
+  until: _result.status == 200
+  retries: 60 # 720 * 5 seconds = 1hour (60*60/5)
+  delay: 5 # Every 5 seconds
+
+# - name: generate token
+#   uri:
+#     url: "{{ generatetoken_endpoint }}"
+#     method: POST
+#     body: "password={{ portal_admin_user_pw }}&username={{ portal_admin_user }}&client=referer&ip=&referer=https://{{ portal_internal_fqdn }}:7443&expiration=30&f=json"
+#     validate_certs: no
+#     body_format: form-urlencoded
+#     return_content: yes
+#     status_code: 200
+#   register: tokenresult
+
+- name: generate token
+  uri:
+    url: "{{ generatetoken_endpoint }}"
+    method: POST
+    body: 
+      password: "{{ portal_admin_user_pw }}"
+      username: "{{ portal_admin_user }}"
+      client: referer
+      ip:
+      referer: "https://{{ portal_internal_fqdn }}:7443"
+      expiration: 30
+      f: json
+    validate_certs: no
+    body_format: form-urlencoded
+    return_content: yes
+    status_code: 200
+  register: tokenresult
+
+- debug:
+    var: tokenresult.json.token

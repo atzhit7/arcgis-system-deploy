@@ -1,0 +1,24 @@
+---
+- name: federation arcgis portal and arcgis server for prod
+  hosts: arcgisservernode
+  become: false
+  roles:
+    - federation
+  vars_files:
+    - vars_global.yaml
+
+- name: federation arcgis portal and arcgis server for dev
+  hosts: devarcgisservernode
+  become: false
+  roles:
+    - federation
+  vars_files:
+    - vars_global.yaml
+
+# - name: deploy arcgis portal at local
+#   hosts: local_arcgisportalnode
+#   become: false
+#   roles:
+#     - federation
+#   vars_files:
+#     - vars_local_global.yaml
