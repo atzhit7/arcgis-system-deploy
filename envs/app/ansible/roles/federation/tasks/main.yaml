@@ -1,0 +1,23 @@
+---
+- include_tasks: win_generate_portal_token.yaml
+  when:
+    - ansible_os_family == "Windows"
+- include_tasks: win_federate_server.yaml 
+  when:
+    - ansible_os_family == "Windows"
+- include_tasks: win_update_server_role.yaml 
+  when:
+    - ansible_os_family == "Windows"
+### Linux
+- include_tasks: generate_portal_token.yaml
+  when:
+    - ansible_distribution in ['RedHat','CentOS', 'Debian', 'Ubuntu']
+- include_tasks: generate_server_token.yaml
+  when:
+    - ansible_distribution in ['RedHat','CentOS', 'Debian', 'Ubuntu']
+- include_tasks: federate_server.yaml 
+  when:
+    - ansible_distribution in ['RedHat','CentOS', 'Debian', 'Ubuntu']
+- include_tasks: update_server_role.yaml 
+  when:
+    - ansible_distribution in ['RedHat','CentOS', 'Debian', 'Ubuntu']

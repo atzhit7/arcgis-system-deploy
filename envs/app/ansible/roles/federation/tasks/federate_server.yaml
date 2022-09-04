@@ -1,0 +1,73 @@
+---
+- name: check if server is available
+  uri:
+    url: "{{ server_healthcheck_endpoint }}"
+    method: GET
+    validate_certs: no
+    status_code: 200
+  register: server_healthstatus_result
+  until: server_healthstatus_result.status == 200
+  retries: 60 # 720 * 5 seconds = 1hour (60*60/5)
+  delay: 5 # Every 5 seconds
+
+#### check if exist this server
+- name: check if this server is registerred
+  uri:
+    url: "{{ server_admin_root_endpoint }}/admin/security/config"
+    method: POST
+    body: "f=json&token={{ tokenresult.json.token }}"
+    body_format: form-urlencoded
+    validate_certs: no
+    status_code: [200, 302]
+    return_content: yes
+    headers:
+      referer: "{{ server_admin_root_endpoint }}/admin"
+  register: current_config
+
+- name: check config
+  debug:
+    var: current_config.json | type_debug
+
+- name: Set the face of json data
+  set_fact:
+    configjson: current_config.json
+- debug:
+    var: configjson | type_debug
+
+- name: get serverid if already federated
+  set_fact:
+    arcgisserverid: "{{ current_config.json.portalProperties['serverId'] }}"
+  when: '"portalProperties" in current_config.json'
+
+- debug:
+    var: arcgisserverid
+
+- name: register server
+  uri:
+    url: "{{ federation_endpoint }}/servers/federate"
+    method: POST
+    body: "url={{ server_webcontext_url }}&adminUrl={{ server_admin_root_endpoint }}&username={{ server_admin_user }}&password={{ server_admin_user_password }}&f=json&token={{ portaltokenresult.json.token }}"
+    body_format: form-urlencoded
+    validate_certs: no
+    status_code: [200, 302]
+    return_content: yes
+    headers:
+      # host: "{{ portal_internal_fqdn }}:7443"
+      # x-forwarded-host: "{{ portal_internal_fqdn }}"
+      # origin: "https://{{ portal_internal_fqdn }}:7443"
+      referer: "{{ federation_endpoint }}"
+  register: register_server
+  failed_when: false
+  register: register_server
+  until: register_server.status == 200
+  retries: 60
+  delay: 5
+  when: '"portalProperties" not in current_config.json'
+
+- debug:
+    var: register_server
+
+- name: set the fact server id
+  set_fact:
+    arcgisserverid: "{{ register_server.json.serverId }}"
+  when: '"portalProperties" not in current_config.json and "serverId" in register_server.json'

@@ -1,0 +1,34 @@
+---
+- name: check if reachable federate server
+  ansible.windows.win_uri:
+    url: "{{ server_healthcheck_endpoint }}"
+    method: GET
+    validate_certs: no
+    status_code: 200
+  register: server_healthstatus_result
+  until: server_healthstatus_result.status_code == 200
+  retries: 60 # 720 * 5 seconds = 1hour (60*60/5)
+  delay: 5 # Every 5 seconds
+
+- name: register server
+  ansible.windows.win_uri:
+    url: "{{ federation_endpoint }}/servers/federate"
+    method: POST
+    body: "url={{ server_webcontext_url }}&adminUrl={{ server_admin_root_endpoint }}&username={{ server_admin_user }}&password={{ server_admin_user_password }}&f=json&token={{ tokenresult.json.token }}"
+    content_type: application/x-www-form-urlencoded
+    validate_certs: no
+    status_code: 200
+    return_content: yes
+    url_timeout: 180
+    headers:
+      # host: "{{ portal_internal_fqdn }}:7443"
+      # x-forwarded-host: "{{ portal_internal_fqdn }}"
+      # origin: "https://{{ portal_internal_fqdn }}:7443"
+      referer: "{{ federation_endpoint }}"
+  register: register_server
+  failed_when: false
+  poll: 5
+  async: 60
+
+- debug:
+    var: register_server
