@@ -1,0 +1,7 @@
+---
+- name: expose ports for arcgis
+  ufw:
+    port: "{{ item }}"
+    rule: allow
+    proto: tcp
+  loop: "{{ arcgisports }}"

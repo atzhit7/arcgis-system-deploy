@@ -1,0 +1,9 @@
+- name: expose ports for arcgis
+  firewalld:
+    port: "{{ item }}/tcp"
+    permanent: yes
+    state: enabled
+    zone: public
+  loop: "{{ arcgisports }}"
+  notify: restart firewalld
+  changed_when: True

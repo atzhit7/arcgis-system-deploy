@@ -1,0 +1,21 @@
+---
+- include_tasks: win_generate_selfcertificates.yaml
+  when:
+    - ansible_os_family == "Windows"
+- include_tasks: win_enable_firewall.yaml 
+  when:
+    - ansible_os_family == "Windows"
+- include_tasks: win_create_user.yaml 
+  when:
+    - ansible_os_family == "Windows"
+
+### Linux
+- include_tasks: generate_selfcertificates.yaml
+  when:
+    - ansible_distribution in ['RedHat','CentOS']
+- include_tasks: enable_firewalld.yaml 
+  when:
+    - ansible_distribution in ['RedHat','CentOS']
+- include_tasks: enable_firewall.yaml 
+  when:
+    - ansible_distribution in ['Debian', 'Ubuntu']

@@ -1,0 +1,180 @@
+---
+- name: Set the fact for dns subject
+  set_fact:
+    dnsnames_list: "{{ (selfsignedcert_dnsnames | regex_replace(',\\s*', ',')).split(',') }}"
+
+- name: Set the fact for dns subject
+  set_fact:
+    selfsignedcert_dnsnames_list: "{{ dnsnames_list | map('regex_replace', '^', 'DNS:') | list }}"
+
+### check if exist controller
+- name: check if private key
+  local_action:
+    module: stat
+    path: "{{ controller_local_data_dir }}/private.key"
+  register: controller_privatekeyfile
+
+- name: copy the private key if exist from controller
+  copy:
+    src: "{{ controller_local_data_dir }}/private.key"
+    dest: "{{ remote_temp_dest_dir }}/"
+    force: no
+  when: controller_privatekeyfile.stat.exists == true
+
+- name: Create private key for new certificate
+  community.crypto.openssl_privatekey:
+    path: "{{ remote_temp_dest_dir }}/private.key"
+  run_once: true
+  when: controller_privatekeyfile.stat.exists == false
+
+- name: fetch the private key to controller
+  fetch:
+    dest: "{{ controller_local_data_dir }}/"
+    src: "{{ remote_temp_dest_dir }}/private.key"
+    flat: yes
+  when: controller_privatekeyfile.stat.exists == false
+
+### cacert
+- name: check if exisisting certfile at controller
+  local_action:
+    module: stat
+    path: "{{ controller_local_data_dir }}/cacert.pem"
+  register: controller_cacertfile
+
+- name: copy the private key if exist in local
+  copy:
+    src: "{{ controller_local_data_dir }}/cacert.pem"
+    dest: "{{ remote_temp_dest_dir }}/"
+    force: no
+  when: controller_cacertfile.stat.exists == true
+  
+- name: Check whether certificate exists
+  stat:
+    path: "{{ remote_temp_dest_dir }}/cacert.pem"
+  run_once: true
+  register: cacertfile_exists
+
+### create csr for ca cert
+- name: Create certificate signing request (CSR) for CA certificate
+  community.crypto.openssl_csr_pipe:
+    privatekey_path: "{{ remote_temp_dest_dir }}/private.key"
+    common_name: arcgis-self root CA
+    country_name: JP
+    organization_name: arcgissystem dev
+    organizational_unit_name: arcgisystem.com
+    use_common_name_for_san: false  # since we do not specify SANs, don't use CN as a SAN
+    basic_constraints:
+      - 'CA:TRUE'
+    basic_constraints_critical: yes
+    key_usage:
+      - keyCertSign
+    key_usage_critical: true
+  register: ca_csr
+  when: cacertfile_exists.stat.exists == false
+
+- name: Create self-signed CA certificate from CSR
+  community.crypto.x509_certificate:
+    path: "{{ remote_temp_dest_dir }}/cacert.pem"
+    csr_content: "{{ ca_csr.csr }}"
+    privatekey_path: "{{ remote_temp_dest_dir }}/private.key"
+    provider: selfsigned
+  when: cacertfile_exists.stat.exists == false
+
+- name: Read existing ca certificate
+  slurp:
+    src: "{{ remote_temp_dest_dir }}/cacert.pem"
+  when: cacertfile_exists.stat.exists
+  run_once: true
+  register: cacertificate
+
+- name: fetch the ca cert to controller
+  fetch:
+    dest: "{{ controller_local_data_dir }}/"
+    src: "{{ remote_temp_dest_dir }}/cacert.pem"
+    flat: yes
+  when: controller_cacertfile.stat.exists == false
+
+### web server cert
+- name: check if exisisting server certfile at controller
+  local_action:
+    module: stat
+    path: "{{ controller_local_data_dir }}/webcert.pfx"
+  register: controller_servercertfile
+
+- name: check if exisisting server certfile x509 at controller
+  local_action:
+    module: stat
+    path: "{{ controller_local_data_dir }}/webcert.pem"
+  register: controller_x509_servercertfile
+
+- name: copy the x509 server certiface if exist from controller
+  copy:
+    src: "{{ controller_local_data_dir }}/webcert.pem"
+    dest: "{{ remote_temp_dest_dir }}/"
+    force: no
+  when: controller_x509_servercertfile.stat.exists == true
+
+- name: copy the server certiface if exist from controller
+  copy:
+    src: "{{ controller_local_data_dir }}/webcert.pfx"
+    dest: "{{ remote_temp_dest_dir }}/"
+    force: no
+  when: controller_servercertfile.stat.exists == true
+
+- name: Create web certificate signing request (CSR) for new certificate
+  community.crypto.openssl_csr_pipe:
+    privatekey_path: "{{ remote_temp_dest_dir }}/private.key"
+    subject_alt_name: "{{ selfsignedcert_dnsnames_list }}"
+    common_name: "{{ selfsignedcert_commonname }}"
+    country_name: JP
+    organization_name: arcgissystem dev
+    organizational_unit_name: arcgisystem.com
+  run_once: true
+  register: webcert_csr
+  when: controller_servercertfile.stat.exists == false
+
+- name: Sign certificate with our CA
+  community.crypto.x509_certificate_pipe:
+    content: "{{ (cacertificate.content | b64decode) if cacertfile_exists.stat.exists else omit }}"
+    csr_content: "{{ webcert_csr.csr }}"
+    provider: ownca
+    ownca_path: "{{ remote_temp_dest_dir }}/cacert.pem"
+    ownca_privatekey_path: "{{ remote_temp_dest_dir }}/private.key"
+    ownca_not_after: +365d  # valid for one year
+    ownca_not_before: "-1d"  # valid since yesterday
+  run_once: true
+  register: webcertificate
+  when: controller_servercertfile.stat.exists == false
+
+- name: Write certificate file
+  copy:
+    dest: "{{ remote_temp_dest_dir }}/webcert.pem"
+    content: "{{ webcertificate.certificate }}"
+  run_once: true
+  when: webcertificate is changed and controller_servercertfile.stat.exists == false
+
+- name: fetch the x509 web cert to controller
+  fetch:
+    dest: "{{ controller_local_data_dir }}/"
+    src: "{{ remote_temp_dest_dir }}/webcert.pem"
+    flat: yes
+  when: controller_x509_servercertfile.stat.exists == false
+
+- name: Generate PKCS#12 file
+  community.crypto.openssl_pkcs12:
+    action: export
+    path: "{{ remote_temp_dest_dir }}/webcert.pfx"
+    friendly_name: raclette
+    privatekey_path: "{{ remote_temp_dest_dir }}/private.key"
+    certificate_path: "{{ remote_temp_dest_dir }}/webcert.pem"
+    other_certificates: "{{ remote_temp_dest_dir }}/cacert.pem"
+    state: present
+    passphrase: "{{ servercertpassword }}"
+  when: controller_servercertfile.stat.exists == false
+
+- name: fetch the web cert to controller
+  fetch:
+    dest: "{{ controller_local_data_dir }}/"
+    src: "{{ remote_temp_dest_dir }}/webcert.pfx"
+    flat: yes
+  when: controller_servercertfile.stat.exists == false

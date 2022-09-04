@@ -1,0 +1,8 @@
+---
+- name: Create an arcgis service account
+  win_user:
+    name: "{{ arcgis_service_account }}"
+    password: "{{ arcgis_service_account_pw }}"
+    user_cannot_change_password: yes
+    password_never_expires: yes
+    update_password: on_create

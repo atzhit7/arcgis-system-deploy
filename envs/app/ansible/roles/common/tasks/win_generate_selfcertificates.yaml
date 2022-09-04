@@ -1,0 +1,109 @@
+---
+- name: check if exisisting certfile
+  local_action:
+    module: stat
+    path: "{{ controller_local_data_dir }}/{{ ca_certificate_filename }}"
+  register: existingcertfile
+
+- name: check if exisisting server certfile
+  local_action:
+    module: stat
+    path: "{{ controller_local_data_dir }}/{{ web_certificate_filename }}"
+  register: existingservercertfile
+
+- debug:
+    var: existingcertfile
+
+- name: generate selfsigned certificate
+  ansible.windows.win_powershell:
+    script: |
+      [CmdletBinding()]
+      param (
+        [String]
+        $CertPassword,
+
+        [String]
+        $DNSNames,
+
+        [String]
+        $COMMONName,
+
+        [String]
+        $CA_ExportFilePath,
+
+        [String]
+        $Web_ExportFilePath
+      )
+
+      $mycacert=New-SelfSignedCertificate `
+      -Subject "CN=egihs-self root CA, OU=egihs.com, O=egihs dev, C=JP" `
+      -Type Custom -KeySpec Signature -KeyExportPolicy Exportable `
+      -KeyAlgorithm RSA -HashAlgorithm sha1 -KeyLength 2048 `
+      -CertStoreLocation Cert:\LocalMachine\My\ -KeyUsageProperty Sign `
+      -KeyUsage DigitalSignature,CertSign `
+      -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.1,1.3.6.1.5.5.7.3.2,1.3.6.1.5.5.7.3.3,1.3.6.1.5.5.7.3.4,1.3.6.1.5.5.7.3.8")
+      
+      $dnslist = $DNSNames.Split(",")
+
+      $servercert=New-SelfSignedCertificate `
+      -Subject "CN=$COMMONName, OU=egihs.com, O=egihs dev, C=JP" `
+      -DnsName $dnslist `
+      -CertStoreLocation Cert:\LocalMachine\My\ `
+      -KeyAlgorithm 'RSA' -KeyLength 2048 -HashAlgorithm sha256 `
+      -KeyExportPolicy Exportable -Signer $mycacert `
+      -NotAfter (get-date).AddYears(1) `
+      -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.1,1.3.6.1.5.5.7.3.2") `
+      -FriendlyName "servercert"
+
+      $SecureCertPassword = ConvertTo-SecureString -String $CertPassword -AsPlainText -Force
+      
+      Export-Certificate -Cert $mycacert -FilePath $CA_ExportFilePath
+      Export-PfxCertificate -Cert $servercert -FilePath $Web_ExportFilePath -Password $SecureCertPassword
+    parameters:
+      CertPassword: "{{ servercertpassword }}"
+      DNSNames: "{{ selfsignedcert_dnsnames }}"
+      COMMONName: "{{ selfsignedcert_commonname }}"
+      CA_ExportFilePath: "{{ win_remote_temp_dest_dir }}\\{{ ca_certificate_filename }}"
+      Web_ExportFilePath: "{{ win_remote_temp_dest_dir }}\\{{ web_certificate_filename }}"
+  when: existingcertfile.stat.exists == false or existingservercertfile.stat.exists == false
+
+- name: fetch the certiface
+  fetch:
+    dest: "{{ controller_local_data_dir }}/"
+    src: "{{ win_remote_temp_dest_dir }}\\{{ ca_certificate_filename }}"
+    flat: yes
+  when: existingcertfile.stat.exists == false
+
+- name: fetch the certiface
+  fetch:
+    dest: "{{ controller_local_data_dir }}/"
+    src: "{{ win_remote_temp_dest_dir }}\\{{ web_certificate_filename }}"
+    flat: yes
+  when: existingservercertfile.stat.exists == false
+
+- name: copy the certiface if exist in local
+  win_copy:
+    src: "{{ controller_local_data_dir }}/{{ ca_certificate_filename }}"
+    dest: "{{ win_remote_temp_dest_dir }}"
+    force: no
+  when: existingcertfile.stat.exists == true
+
+- name: copy the server certiface if exist in local
+  win_copy:
+    src: "{{ controller_local_data_dir }}/{{ web_certificate_filename }}"
+    dest: "{{ win_remote_temp_dest_dir }}"
+    force: no
+  when: existingservercertfile.stat.exists == true
+
+- name: install cacert to machine
+  ansible.windows.win_powershell:
+    script: |
+      [CmdletBinding()]
+      param (
+        [String]
+        $FilePath
+      )
+
+      Import-Certificate -FilePath $FilePath -CertStoreLocation 'Cert:\\LocalMachine\\Root'
+    parameters:
+      FilePath: "{{ win_remote_temp_dest_dir }}\\{{ ca_certificate_filename }}"

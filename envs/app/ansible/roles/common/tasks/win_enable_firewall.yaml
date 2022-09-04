@@ -1,0 +1,11 @@
+---
+- name: Firewall rule to allow arcgis
+  community.windows.win_firewall_rule:
+    name: "arcgis firewalls -{{ item }}"
+    localport: "{{ item }}"
+    action: allow
+    direction: in
+    protocol: tcp
+    state: present
+    enabled: yes
+  loop: "{{ arcgisports }}"
