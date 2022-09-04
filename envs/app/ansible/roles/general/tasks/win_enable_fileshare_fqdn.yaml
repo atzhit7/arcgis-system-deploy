@@ -1,0 +1,7 @@
+---
+- name: Add key for sharing with fqdn cname
+  ansible.windows.win_regedit:
+    path: HKLM:\SYSTEM\CurrentControlSet\Control\Lsa\MSV1_0
+    name: BackConnectionHostNames
+    data: ["{{ portal_internal_fqdn }}"]
+    type: multistring

@@ -1,0 +1,13 @@
+---
+- include_tasks: win_enable_fileshare_fqdn.yaml
+  when:
+    - ansible_os_family == "Windows"
+
+### Linux
+- include_tasks: apt.yaml 
+  when:
+    - ansible_distribution in ['Debian', 'Ubuntu']
+    
+- include_tasks: yum.yaml 
+  when:
+    - ansible_distribution in ['RedHat','CentOS']

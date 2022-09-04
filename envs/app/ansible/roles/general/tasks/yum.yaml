@@ -1,0 +1,19 @@
+- name: Yum update at hosts
+  yum:
+    name: '*'
+    state: latest
+  async: 1000
+  poll: 1
+  register: yum_sleeper
+
+- debug:
+    var: yum_sleeper
+
+- name: Wait for asynchronous job to end
+  async_status:
+    jid: "{{ yum_sleeper.ansible_job_id }}"
+  register: job_result
+  until: job_result.finished
+  when: yum_sleeper.finished != 1
+  retries: 30
+  delay: 10

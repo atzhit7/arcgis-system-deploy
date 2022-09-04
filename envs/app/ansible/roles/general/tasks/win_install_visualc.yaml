@@ -1,0 +1,18 @@
+---
+- name: Install Visual C++ x86
+  win_package:
+    path: https://download.visualstudio.microsoft.com/download/pr/144a5711-f076-44fa-bf55-f7e0121eb30c/B7AE307237F869E09F7413691A2CD1944357B5CEE28049C0A0D3430B47BB3EDC/VC_redist.x86.exe
+    product_id: '{799E3FFF-705C-461F-B400-6DE27398B3E5}'
+    arguments:
+    - /install
+    - /passive
+    - /norestart
+
+- name: Install Visual C++ x64
+  win_package:
+    path: https://download.visualstudio.microsoft.com/download/pr/d22ecb93-6eab-4ce1-89f3-97a816c55f04/37ED59A66699C0E5A7EBEEF7352D7C1C2ED5EDE7212950A1B0A8EE289AF4A95B/VC_redist.x64.exe
+    product_id: '{A181A302-3F6D-4BAD-97A8-A426A6499D78}'
+    arguments:
+    - /install
+    - /passive
+    - /norestart
