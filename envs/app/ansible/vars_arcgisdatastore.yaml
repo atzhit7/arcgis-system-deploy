@@ -17,8 +17,18 @@ win_configure_datastore_shell_location: "{{ win_install_dir }}\\tools" # The ans
 win_configure_datastore_shell: "configuredatastore.bat {{ server_admin_root_endpoint }} {{ server_admin_user }} {{ server_admin_user_password }} {{ win_datastore_dir }} --stores {{ choices_datastore_types }}"
 win_install_cacert_into_TrustedRoot: "Import-Certificate -FilePath {{ win_remote_temp_dest_dir }}\\cacert.cer  -CertStoreLocation 'Cert:\\LocalMachine\\Root'"
 win_update_sslcertificates_shell: "echo Yes|updatesslcertificate.bat {{ win_remote_temp_dest_dir }}\\{{ web_certificate_filename }} %certpassword% {{ web_certificate_alias }}"
+win_arcgistools_shell_location: "{{ win_install_dir }}\\tools"
+win_serviceaccount_shell: "configureserviceaccount.bat --username {{ arcgis_service_account }} --password {{ arcgis_service_account_pw }}"
+win_serviceaccount_shell_location: "{{ win_install_dir }}\\tools"
+win_serviceaccount_shell: "configureserviceaccount.bat --username {{ arcgis_service_account }} --password {{ arcgis_service_account_pw }}"
+
 
 # for Linux in the future
 install_dir: /opt
 # handler paramter
+datastore_dir: /opt/arcgis/datastore/usr
+# handler paramter
 service_name: arcgisdatastore
+configure_datastore_shell_location: "{{ install_dir }}/tools" # The ansible task can get the value from registery and overwrite this win_install_dir varibable.
+configure_datastore_shell: "./configuredatastore.sh {{ server_admin_root_endpoint }} {{ server_admin_user }} {{ server_admin_user_password }} {{ datastore_dir }} --stores {{ choices_datastore_types }}"
+update_sslcertificates_shell: "yes | ./updatesslcertificate.sh {{ remote_temp_dest_dir }}/webcert.pfx {{ servercertpassword }} {{ web_certificate_alias }}"

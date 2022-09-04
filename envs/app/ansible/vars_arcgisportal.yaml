@@ -23,8 +23,15 @@ win_portal_dir: C:\egihs\arcgisportal
 win_install_dir: C:\ArcGIS # the default value. The ansible task can get the value from registery and overwrite this varibable.
 win_createportal_shell_location: "{{ win_install_dir }}\\tools\\createportal" # the default value. The ansible task can get the win_install_dir value from registery and overwrite this varibable.
 win_createportal_shell: "createportal.bat -f {{ win_remote_temp_dest_dir }}\\createportal.properties" # See the terraform template file in the data directory. 
+win_serviceaccount_shell_location: "{{ win_install_dir }}\\tools"
+win_serviceaccount_shell: "configureserviceaccount.bat --username {{ arcgis_service_account }} --password {{ arcgis_service_account_pw }}"
 
 # for Linux in the future
 install_dir: /opt
+portal_dir: "{{ install_dir }}/arcgis/portal/usr"
 # service name parameter
 service_name: arcgisportal
+createportal_shell_location: "{{ install_dir }}/tools/createportal" # the default value. The ansible task can get the win_install_dir value from registery and overwrite this varibable.
+createportal_shell: "./createportal.sh -f {{ remote_temp_dest_dir }}/createportal.properties" # See the terraform template file in the data directory. 
+
+portal_local_authorizationfile: LOCALFILEPATH_ONPREMISE

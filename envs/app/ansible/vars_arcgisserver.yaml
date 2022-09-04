@@ -23,15 +23,23 @@ win_authorize_software_shell: "{{ win_softwareauthorization_exe }} -s Server -v 
 # {{ C:\Program Files\Common Files\ArcGIS\bin\SoftwareAuthorization.exe }}\"\" /S Server /V 10.9 /LIF "{{ win_remote_temp_dest_dir }}\{{ server_authorizationfile }}
 win_createsite_shell: "createsite.bat -u {{ server_admin_user }} -p {{ server_admin_user_password }} -d {{ win_server_dir }} -c {{ win_config_store_dir }}"
 win_createsite_shell_location: "{{ win_install_dir }}\\tools\\createsite"
+win_arcgistools_shell_location: "{{ win_install_dir }}\\tools"
+win_serviceaccount_shell: "configureserviceaccount.bat --username {{ arcgis_service_account }} --password {{ arcgis_service_account_pw }}"
+win_serviceaccount_shell_location: "{{ win_install_dir }}\\bin\\"
+win_serviceaccount_shell: "ServerConfigurationUtility.exe /username {{ arcgis_service_account }} /password {{ arcgis_service_account_pw }}"
 
 # for Linux in the future
 # arcgis parameters
 install_dir: /opt # from goldenimage
-server_dir: "{{ install_dir }}/arcgis/server/usr"
+server_dir: "{{ install_dir }}/usr"
 # default is install_dir /arcgis/server/ server_dir
-config_store_dir: "{{ install_dir }}/arcgis/server/usr"
+config_store_dir: "{{ install_dir }}/usr"
 # default is install_dir /arcgis/server/ config_store_dir
 createsite_shell: "./createsite.sh -u {{ server_admin_user }} -p {{ server_admin_user_password }} -d {{ server_dir }} -c {{ config_store_dir }}"
-createsite_shell_location: "{{ install_dir }}/arcgis/server/tools/createsite"
+createsite_shell_location: "{{ install_dir }}/tools/createsite"
 # service name parameter
 service_name: arcgisserver
+authorize_software_shell: "./authorizeSoftware -f {{ remote_temp_dest_dir }}/{{ server_authorizationfile }}"
+authorize_software_shell_location: "{{ install_dir }}/tools"
+
+copy_local_authorization_file: LOCALFILEPATH_ONPREMISE
