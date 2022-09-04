@@ -1,0 +1,63 @@
+- name: import web certificate
+  uri:
+    url: "{{ importwebcertificate_endpoint }}"
+    method: POST
+    body:
+      alias: "{{ web_certificate_alias }}"
+      token: "{{ tokenresult.json.token }}"
+      certPassword: "{{ servercertpassword }}"
+      f: json
+      certFile:
+        filename: "{{ remote_temp_dest_dir }}/webcert.pfx"
+        mime_type: application/x-pkcs12
+    headers:
+      Referer: "https://{{ server_internal_fqdn }}:6443"
+    validate_certs: no
+    body_format: form-multipart
+    return_content: yes
+    status_code: [200, 302]
+    remote_src: yes
+  register: importwebresult
+
+- name: import web certificate shell
+  shell: "curl -X POST -F 'alias={{ web_certificate_alias }}' -F 'certPassword={{ servercertpassword }}' -F 'token={{ tokenresult.json.token }}' -F 'f=json' -F certFile=@{{ remote_temp_dest_dir }}/webcert.pfx --referer https://{{ server_internal_fqdn }}:6443 --insecure {{ importwebcertificate_endpoint }}"
+  register: importwebresultshell
+  args:
+    executable: /bin/bash
+
+- name: import ca certificate
+  uri:
+    url: "{{ importcacertificate_endpoint }}"
+    method: POST
+    body:
+      alias: "{{ ca_certificate_alias }}"
+      token: "{{ tokenresult.json.token }}"
+      # norestart: "true"
+      f: json
+      rootCACertificate:
+        filename: "{{ remote_temp_dest_dir }}/cacert.pem"
+        mime_type: application/x-x509-ca-cert
+    headers:
+      Referer: "https://{{ server_internal_fqdn }}:6443"
+    validate_certs: no
+    body_format: form-multipart
+    return_content: yes
+    status_code: [200, 302]
+    remote_src: yes
+  register: importcaresult
+
+- name: import ca certificate shell
+  shell: "curl -X POST -F 'alias={{ ca_certificate_alias }}' -F 'token={{ tokenresult.json.token }}' -F 'f=json' -F rootCACertificate=@{{ remote_temp_dest_dir }}/cacert.pem  --referer https://{{ server_internal_fqdn }}:6443 --insecure {{ importcacertificate_endpoint }}"
+  register: importcaresultshell
+  args:
+    executable: /bin/bash
+
+- debug:
+    var: importcaresult
+- debug:
+    var: importwebresult
+
+- debug:
+    var: importcaresultshell
+- debug:
+    var: importwebresultshell

@@ -1,0 +1,28 @@
+---
+- name: set web contexturl
+  uri:
+    url: "{{ system_properties_update_endpoint }}"
+    method: POST
+    body: "properties={\"WebContextURL\": \"{{ server_webcontext_url }}\"}&f=json&token={{ tokenresult.json.token }}"
+    validate_certs: no
+    body_format: form-urlencoded
+    return_content: yes
+    headers:
+      Referer: "https://{{ server_internal_fqdn }}:6443"
+  register: setwebcontexturl
+  poll: 5
+  async: 90
+
+- debug:
+    var: setwebcontexturl
+
+- name: check if the editing server properties is completed
+  uri:
+    url: "{{ healthcheck_endpoint }}"
+    method: GET
+    validate_certs: no
+    status_code: 200
+  register: _result
+  until: _result.status == 200
+  retries: 60 # 720 * 5 seconds = 1hour (60*60/5)
+  delay: 5 # Every 5 seconds

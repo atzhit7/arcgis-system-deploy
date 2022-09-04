@@ -2,6 +2,9 @@
 - include_tasks: win_get_install_params.yaml
   when:
     - ansible_os_family == "Windows"
+- include_tasks: win_change_serviceaccount.yaml 
+  when:
+    - ansible_os_family == "Windows"
 - include_tasks: win_startservice.yaml
   when:
     - ansible_os_family == "Windows"
@@ -29,4 +32,33 @@
 # - include_tasks: win_rename_temporal_server_machine.yaml
 #   when:
 #     - ansible_os_family == "Windows"
+
+### Linux
+- include_tasks: get_install_params.yaml
+  when:
+    - ansible_distribution in ['RedHat','CentOS', 'Debian', 'Ubuntu']
+- include_tasks: startservice.yaml
+  when:
+    - ansible_distribution in ['RedHat','CentOS', 'Debian', 'Ubuntu']
+- include_tasks: authorize.yaml
+  when:
+    - ansible_distribution in ['RedHat','CentOS', 'Debian', 'Ubuntu']
+- include_tasks: createsite.yaml
+  when:
+    - ansible_distribution in ['RedHat','CentOS', 'Debian', 'Ubuntu']
+- include_tasks: post_createsite.yaml
+  when:
+    - ansible_distribution in ['RedHat','CentOS', 'Debian', 'Ubuntu']
+- include_tasks: generate_token.yaml
+  when:
+    - ansible_distribution in ['RedHat','CentOS', 'Debian', 'Ubuntu']
+- include_tasks: import_certificates.yaml
+  when:
+    - ansible_distribution in ['RedHat','CentOS', 'Debian', 'Ubuntu']
+- include_tasks: update_machine_settings.yaml
+  when:
+    - ansible_distribution in ['RedHat','CentOS', 'Debian', 'Ubuntu']
+- include_tasks: set_webcontexturl.yaml
+  when:
+    - ansible_distribution in ['RedHat','CentOS', 'Debian', 'Ubuntu']
 

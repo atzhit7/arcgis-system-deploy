@@ -1,0 +1,5 @@
+- name: arcgis systemd service
+  systemd:
+    state: restarted
+    name: "{{ service_name }}"
+  register: serviceresult

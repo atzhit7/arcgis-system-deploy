@@ -1,0 +1,25 @@
+# - name: copy authorization file
+#   shell: "aws s3 cp s3://{{ installer_bucket_name }}/{{ server_authorizationfile }} {{ remote_temp_dest_dir }}/{{ server_authorizationfile }}"
+#   when:
+#     - cloud_infrastructure is defined
+
+- name: copy auth
+  copy:
+    src: "{{ copy_local_authorization_file }}"
+    dest: "{{ remote_temp_dest_dir }}/{{ server_authorizationfile }}"
+    mode: 0755
+    owner: "{{ arcgis_service_account }}"
+    force: no
+  when: cloud_infrastructure is not defined
+
+- debug:
+    var: authorize_software_shell_location
+
+- name: software authorization
+  shell: "{{ authorize_software_shell }}"
+  become: yes
+  become_user: "{{ arcgis_service_account }}"
+  args:
+    chdir: "{{ authorize_software_shell_location }}"
+    executable: /bin/bash
+    
