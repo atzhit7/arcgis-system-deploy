@@ -1,0 +1,15 @@
+---
+- name: check if datastore web service up
+  uri:
+    url: "{{ datastore_webserver_endpoint }}"
+    method: GET
+    validate_certs: no
+    status_code: [200, 302]
+  register: _result
+  until: _result.status == 200
+  retries: 60 # 720 * 5 seconds = 1hour (60*60/5)
+  delay: 5 # Every 5 seconds
+
+- name: check if the site is up
+  debug:
+    var: _result

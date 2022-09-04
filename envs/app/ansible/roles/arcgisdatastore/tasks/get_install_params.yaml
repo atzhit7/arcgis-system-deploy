@@ -1,0 +1,101 @@
+---
+- name: find Prop file for installation
+  find:
+    paths: "/home"
+    patterns: ".ESRI.properties.*"
+    hidden: yes
+    recurse: yes
+  register: propfiles
+
+- debug:
+    var: propfiles.files[0]
+
+- name: slurp ESRI Prop
+  slurp:
+    path: "{{ propfiles.files[0].path }}"
+  register: slurp_file
+
+- name: Get the install directory list
+  set_fact:
+    installdir_list: "{{ slurp_file.content | b64decode | regex_findall('Z_ArcGISDataStore_INSTALL_DIR=(/[A-Za-z0-9-].*)') }}"
+
+- name: check install directory as list
+  debug:
+    var: installdir_list
+
+- name: Set and overwrite the fact of istall_dir as string
+  set_fact:
+    install_dir: "{{ installdir_list[0] }}"
+
+- name: Set and overwrite the fact of service account
+  set_fact: 
+    arcgis_service_account: "{{ propfiles.files[0].pw_name }}"
+
+- name: check user of file owner
+  debug:
+    var: arcgis_service_account
+
+- name: Set and overwrite the fact of service account group
+  set_fact: 
+    arcgis_service_account_group: "{{ propfiles.files[0].gr_name }}"
+
+- name: check user of file owner
+  debug:
+    var: arcgis_service_account_group
+
+# ---
+# - name: arcgis systemd service to get unit info
+#   systemd:
+#     state: stopped
+#     name: "{{ service_name }}"
+#   register: serviceresult
+
+# - name: Set the fact of service status
+#   set_fact: 
+#     servicestatus: "{{ serviceresult.status }}"
+
+# - name: Check the status
+#   debug:
+#     var: servicestatus
+
+# - name: Set the fact of service status
+#   set_fact: 
+#     execstartinfo: "{{ serviceresult.status.ExecStart }}"
+# - name: Set the fact of path
+#   set_fact:
+#     pathlist: "{{ execstartinfo | regex_findall('path=(/[A-Za-z0-9-].*?\\s)') | replace(' ','')}}"
+# - name: Set and overwrite the fact of istall_dir
+#   set_fact:
+#     install_dir: "{{ pathlist[0] | dirname }}"
+# - name: Check install directory
+#   debug:
+#     var: install_dir
+# - name: Set and overwrite the fact of service account
+#   set_fact: 
+#     arcgis_service_account: "{{ serviceresult.status.User }}"
+# - name: check
+#   debug:
+#     var: arcgis_service_account
+
+- name: touch hostidentifier properties for route53 dns
+  file:
+    path: "{{ install_dir }}/framework/etc/hostidentifier.properties"
+    state: touch
+    owner: "{{ arcgis_service_account }}"
+    group: "{{ arcgis_service_account_group }}"
+
+- name: insert hostidentifier properties for route53 dns
+  lineinfile:
+    path: "{{ install_dir }}/framework/etc/hostidentifier.properties"
+    line: "hostidentifier={{ datastore_internal_fqdn }}"
+    create: yes
+    backup: yes
+    # state: present
+
+- name: insert hostidentifier properties for route53 dns
+  lineinfile:
+    path: "{{ install_dir }}/framework/etc/hostidentifier.properties"
+    line: "preferredidentifier=hostname"
+    create: yes
+    backup: yes
+    # state: present

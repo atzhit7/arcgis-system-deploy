@@ -1,0 +1,12 @@
+---
+- name: configure this with server
+  shell: "{{ configure_datastore_shell }}"
+  become: yes
+  become_user: "{{ arcgis_service_account }}"
+  register: configureresult
+  args:
+    chdir: "{{ configure_datastore_shell_location }}"
+    executable: /bin/bash
+
+- debug:
+    var: configureresult

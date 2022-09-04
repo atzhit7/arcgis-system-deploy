@@ -1,0 +1,9 @@
+- name: update the sslcertificate
+  shell: "{{ update_sslcertificates_shell }}"
+  args:
+    chdir: "{{ configure_datastore_shell_location }}"
+    executable: cmd.exe
+  poll: 3
+  async: 30
+  register: update_datastore_webcert
+  failed_when: false

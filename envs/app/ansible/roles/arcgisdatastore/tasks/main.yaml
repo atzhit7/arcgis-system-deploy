@@ -2,6 +2,9 @@
 - include_tasks: win_get_install_params.yaml
   when:
     - ansible_os_family == "Windows"
+- include_tasks: win_change_serviceaccount.yaml 
+  when:
+    - ansible_os_family == "Windows"
 - include_tasks: win_startservice.yaml
   when:
     - ansible_os_family == "Windows"
@@ -17,3 +20,19 @@
 - include_tasks: win_import_certificates.yaml
   when:
     - ansible_os_family == "Windows"
+### Linux
+- include_tasks: get_install_params.yaml
+  when:
+    - ansible_distribution in ['RedHat','CentOS', 'Debian', 'Ubuntu']
+- include_tasks: startservice.yaml
+  when:
+    - ansible_distribution in ['RedHat','CentOS', 'Debian', 'Ubuntu']
+- include_tasks: configuredatastore.yaml
+  when:
+    - ansible_distribution in ['RedHat','CentOS', 'Debian', 'Ubuntu']
+- include_tasks: post_configuredatastore.yaml
+  when:
+    - ansible_distribution in ['RedHat','CentOS', 'Debian', 'Ubuntu']
+- include_tasks: import_certificates.yaml
+  when:
+    - ansible_distribution in ['RedHat','CentOS', 'Debian', 'Ubuntu']
