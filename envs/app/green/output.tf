@@ -8,6 +8,8 @@ output "aws_instance_arcgisdatastore_id" {
   value = aws_instance.arcgisdatastore.id
 }
 
+data "aws_region" "current" {}
+
 data "aws_kms_secrets" "parameters" {
   secret {
     name    = "servercert_password"
