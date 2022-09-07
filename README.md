@@ -273,7 +273,14 @@ After deploying blue/green instances, the global variable file, inventory file a
     ansible-playbook -i ./inventory ./arcgisserver.yaml
     ansible-playbook -i ./inventory ./arcgisdatastore.yaml
     ansible-playbook -i ./inventory ./arcgisportal.yaml
+    ansible-playbook -i ./inventory ./federation.yaml
     ```
+
+    Run the playbooks in this order.
+
+    ArcGIS Data Store configuration require ArcGIS Site.
+
+    The reason why to preapare "federation" role is to be able to federate with another role ArcGIS Server instance.
 
     **NOTE: inventory file is created from terraform. The template file is located at /data directory.And also vars_global.yaml for global variables for provisioning is created from terraform.**
 
